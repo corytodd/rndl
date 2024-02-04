@@ -14,10 +14,7 @@ extern "C" {
  * @brief Type of led panel driver configuration
  */
 typedef struct {
-    uint16_t gpio_num;      /*!< GPIO number */
-    uint32_t resolution_hz; /*!< Resolution in Hz */
-    uint32_t led_count;     /*!< Number of LEDs */
-    uint32_t fps;           /*!< Frames per second */
+    struct led_driver_config; /*!< Anonymous structure to inherit from led_driver_config_t */
 } led_panel_driver_config_t;
 
 /**

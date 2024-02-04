@@ -8,6 +8,11 @@
 extern "C" {
 #endif
 
+/**
+ * @brief Point in 2D space
+ * @details
+ * Origin is at the top-left corner of the screen
+ */
 typedef struct {
     uint16_t x;
     uint16_t y;

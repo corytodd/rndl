@@ -27,8 +27,7 @@ struct led_driver_t {
      * @param timeout__ms Timeout in milliseconds
      * @return ESP_OK on success
      */
-    esp_err_t (*led_driver_write_blocking)(led_driver_t *driver, const void *data, size_t size__bytes,
-                                           uint32_t timeout__ms);
+    esp_err_t (*write_blocking)(led_driver_t *driver, const void *data, size_t size__bytes);
 };
 
 typedef struct led_driver_config {
