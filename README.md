@@ -5,7 +5,9 @@ Another WS12 LED project as an excuse for creating a graphics engine.
 ## Design
 
 The graphics engine is designed in layers. At each layer N, only the
-immediate N-1 layer may be accessed.
+immediate N-1 layer may be accessed. In this coordinate system,
+origin in the upper left corner of the surface. X and Y increase
+right and down, respectively.
 
 ```
 Application

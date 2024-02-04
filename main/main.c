@@ -115,13 +115,36 @@ MAYBE_UNUSED static void pattern_strobing_rectangle(void) {
     }
 }
 
+// Draw angled lines on the surface
+MAYBE_UNUSED static void pattern_angled_lines(void) {
+    ESP_LOGI(TAG, "angled lines");
+
+    hsv_t hsv = {.hue = 100, .saturation = 100, .value = 50};
+    color_t color = {0};
+
+    line_t line = {
+        .start = {0, 0},
+        .end = {CONFIG_LED_COLS - 1, CONFIG_LED_ROWS - 1},
+    };
+
+    while (1) {
+        color_hsv2rgb(&hsv, &color);
+
+        surface->clear(surface, &color_off);
+        surface->draw_line(surface, &line, NULL, &color);
+        surface->render(surface);
+
+        hsv.hue++;
+    }
+}
+
 void app_main(void) {
     ESP_LOGI(TAG, "initializing");
     ESP_ERROR_CHECK(led_panel_driver_new(&config, &led_driver));
     ESP_ERROR_CHECK(surface_create(&surface_config, led_driver, &surface));
     ESP_LOGI(TAG, "startup complete");
 
-    pattern_surface_extent();
+    pattern_angled_lines();
 
     ESP_LOGI(TAG, "pattern complete");
 
