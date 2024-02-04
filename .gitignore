@@ -2,4 +2,5 @@
 /build/
 /.devcontainer/
 
-sdkconfig*
+sdkconfig
+sdkconfig.old

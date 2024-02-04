@@ -1,0 +1,27 @@
+menu "Lighty"
+config LED_RESOLUTION_MHZ
+    int "LED resolution in MHz"
+    default 10
+    help
+        1 tick = 0.1us (led strip needs a high resolution)
+
+config LED_GPIO
+    int "LED GPIO pin"
+    default 2
+
+config LED_CHANNELS
+    int "Number of LED channels"
+    default 3
+
+config LED_ROWS
+    int "Number of LED rows"
+    default 16
+
+config LED_COLS
+    int "Number of LED columns"
+    default 32
+
+config LED_FPS
+    int "LED frames per second"
+    default 100
+endmenu
