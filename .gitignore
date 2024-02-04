@@ -1,6 +1,7 @@
 /.vscode/
 /build/
 /.devcontainer/
+.env
 
 sdkconfig
 sdkconfig.old

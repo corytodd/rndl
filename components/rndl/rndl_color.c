@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "color/color.h"
+#include "rndl/color.h"
 
 #include <stdint.h>
 

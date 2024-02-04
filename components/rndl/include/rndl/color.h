@@ -1,7 +1,7 @@
 #pragma once
 
+#include "rndl/utils.h"
 #include "sdkconfig.h"
-#include "utils.h"
 
 #include <stdint.h>
 
@@ -22,7 +22,8 @@ typedef struct {
             uint8_t blue;
             uint8_t red;
         };
-        uint8_t raw[CONFIG_LED_CHANNELS];
+        // TODO: switch to GRB named type
+        uint8_t raw[3];
     };
 } PACKED color_t;
 

@@ -1,27 +1,27 @@
-menu "Lighty"
-config LED_RESOLUTION_MHZ
-    int "LED resolution in MHz"
+menu "RNDL"
+config RNDL_RESOLUTION_MHZ
+    int "RNDL resolution in MHz"
     default 10
     help
-        1 tick = 0.1us (led strip needs a high resolution)
+        1 tick = 0.1us (RNDL strip needs a high resolution)
 
-config LED_GPIO
-    int "LED GPIO pin"
+config RNDL_GPIO
+    int "RNDL GPIO pin"
     default 2
 
-config LED_CHANNELS
+config RNDL_CHANNELS
     int "Number of LED channels"
     default 3
 
-config LED_ROWS
-    int "Number of LED rows"
+config RNDL_ROWS
+    int "Number of LED panel rows"
     default 16
 
-config LED_COLS
-    int "Number of LED columns"
+config RNDL_COLS
+    int "Number of LED panel columns"
     default 32
 
-config LED_FPS
-    int "LED frames per second"
+config RNDL_FPS
+    int "Render frames per second"
     default 100
 endmenu

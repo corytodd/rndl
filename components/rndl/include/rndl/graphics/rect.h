@@ -1,8 +1,8 @@
 #pragma once
 
-#include "color/color.h"
-#include "graphics/line.h"
-#include "graphics/point.h"
+#include "rndl/color.h"
+#include "rndl/graphics/line.h"
+#include "rndl/graphics/point.h"
 
 #ifdef __cplusplus
 extern "C" {

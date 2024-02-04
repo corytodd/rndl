@@ -4,14 +4,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "led_driver/led_encoder.h"
+#include "rndl/led_driver/led_encoder.h"
 
 #include <esp_check.h>
 #include <esp_err.h>
 #include <esp_log.h>
 #include <hal/rmt_types.h>
 
-static const char *TAG = "led_encoder";
+static const char *TAG = "rndl_led_encoder";
 
 typedef struct {
     rmt_encoder_t base;

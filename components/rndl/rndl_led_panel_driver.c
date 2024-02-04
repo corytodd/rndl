@@ -1,14 +1,14 @@
-#include "led_driver/led_driver.h"
-#include "led_driver/led_encoder.h"
-#include "led_driver/led_panel_driver.h"
-#include "utils.h"
+#include "rndl/led_driver/led_driver.h"
+#include "rndl/led_driver/led_encoder.h"
+#include "rndl/led_driver/led_panel_driver.h"
+#include "rndl/utils.h"
 
 #include <driver/rmt_tx.h>
 #include <esp_check.h>
 #include <esp_log.h>
 #include <math.h>
 
-static const char *TAG = "led_panel_driver";
+static const char *TAG = "rndl_led_panel_driver";
 
 typedef struct {
     led_driver_t base;

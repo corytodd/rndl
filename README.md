@@ -1,6 +1,19 @@
-# Lighty
+# rndl
 
-Another WS12 LED project as an excuse for creating a graphics engine.
+A WS2812B LED project focused on rendering.
+
+## Build
+
+This library is built using ESP-IDF on an esp32-wroom-32s. I am using a few
+WS2812B in my setup.
+
+Once you have ESP-IDF on your system and have wired up your panels, build and
+flash using these commands.
+
+```
+make
+make flash
+```
 
 ## Design
 
