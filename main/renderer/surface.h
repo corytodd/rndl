@@ -2,6 +2,7 @@
 
 #include "color/color.h"
 #include "led_driver/led_driver.h"
+#include "renderer/line.h"
 #include "renderer/point.h"
 #include "renderer/rect.h"
 
@@ -26,6 +27,18 @@ struct surface_t {
      * @return ESP_ERR_INVALID_ARG
      */
     esp_err_t (*clear)(surface_t *surface, const color_t *color);
+
+    /**
+     * @brief Draw a line
+     * @param surface Surface instance
+     * @param line Line to draw
+     * @param line_style Style of line
+     * @param color Color to fill the rectangle with
+     * @return ESP_OK on success
+     * @return ESP_ERR_INVALID_ARG
+     */
+    esp_err_t (*draw_line)(surface_t *surface, const line_t *line, const line_style_t *line_style,
+                           const color_t *color);
 
     /**
      * @brief Draw a rectangle
