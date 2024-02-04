@@ -12,7 +12,13 @@ typedef struct {
     point_t end;
 } line_t;
 
+typedef enum {
+    LINE_STYLE_NONE,
+    LINE_STYLE_SOLID,
+} line_fill_style_t;
+
 typedef struct {
+    line_fill_style_t line_fill;
 } line_style_t;
 
 #ifdef __cplusplus

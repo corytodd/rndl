@@ -1,6 +1,7 @@
 #pragma once
 
 #include "color/color.h"
+#include "renderer/line.h"
 #include "renderer/point.h"
 
 #ifdef __cplusplus
@@ -18,7 +19,8 @@ typedef enum {
 } rect_fill_style_t;
 
 typedef struct {
-    rect_fill_style_t fill;
+    line_style_t line_style;
+    rect_fill_style_t rect_fill;
 } rect_style_t;
 
 #ifdef __cplusplus
