@@ -23,7 +23,8 @@ static __aligned(4) uint8_t display_buffer[LED_COUNT * LED_CHAN];
 
 void app_main(void) {
     const hsv_t hsv = {.hue = 0, .saturation = 100, .value = 10};
-    pixel_t pixel = {0};
+    const color_t color_off = {0};
+    color_t pixel = {0};
     point_t point = {.x = 0, .y = 0};
 
     static led_driver_handle_t led_driver = NULL;

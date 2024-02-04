@@ -12,7 +12,7 @@ typedef struct {
     uint8_t green;
     uint8_t blue;
     uint8_t red;
-} PACKED pixel_t;
+} PACKED color_t;
 
 typedef struct {
     uint32_t hue;
@@ -26,7 +26,7 @@ typedef struct {
  * Wiki: https://en.wikipedia.org/wiki/HSL_and_HSV
  *
  */
-void color_hsv2rgb(const hsv_t *hsv, pixel_t *pixel);
+void color_hsv2rgb(const hsv_t *hsv, color_t *pixel);
 
 #ifdef __cplusplus
 }

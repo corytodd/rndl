@@ -14,7 +14,7 @@
  * Wiki: https://en.wikipedia.org/wiki/HSL_and_HSV
  *
  */
-void color_hsv2rgb(const hsv_t *hsv, pixel_t *pixel) {
+void color_hsv2rgb(const hsv_t *hsv, color_t *pixel) {
     const uint32_t hue = hsv->hue % 360; // h -> [0,360]
     uint32_t rgb_max = hsv->value * 2.55f;
     uint32_t rgb_min = rgb_max * (100 - hsv->saturation) / 100.0f;
