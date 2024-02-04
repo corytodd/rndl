@@ -1,5 +1,6 @@
 #pragma once
 
+#include "sdkconfig.h"
 #include "utils.h"
 
 #include <stdint.h>
@@ -8,12 +9,26 @@
 extern "C" {
 #endif
 
+/**
+ * @brief Color of a single pixel
+ * @details
+ * By definition, a pixel is represented in this order
+ * as exactly CONFIG_LED_CHANNELS * 8 bits.
+ */
 typedef struct {
-    uint8_t green;
-    uint8_t blue;
-    uint8_t red;
+    union {
+        struct {
+            uint8_t green;
+            uint8_t blue;
+            uint8_t red;
+        };
+        uint8_t raw[CONFIG_LED_CHANNELS];
+    };
 } PACKED color_t;
 
+/**
+ * @brief HSV container
+ */
 typedef struct {
     uint32_t hue;
     uint32_t saturation;
