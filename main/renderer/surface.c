@@ -4,6 +4,7 @@
 #include <esp_check.h>
 #include <esp_err.h>
 #include <esp_log.h>
+#include <math.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -37,27 +38,106 @@ err:
     return ret;
 }
 
-static esp_err_t surface_fill(surface_t *surface, const point_t *p1, uint16_t w, uint16_t h, const color_t *color) {
+static esp_err_t surface_draw_line(surface_t *surface, const line_t *line, const line_style_t *line_style,
+                                   const color_t *line_color) {
+    UNUSED(line_style);
     esp_err_t ret = ESP_OK;
-    ESP_GOTO_ON_FALSE(surface && p1 && color, ESP_ERR_INVALID_ARG, err, TAG, "invalid argument");
+    ESP_GOTO_ON_FALSE(surface && line && line_color, ESP_ERR_INVALID_ARG, err, TAG, "invalid argument");
     internal_surface_t *internal_surface = __containerof(surface, internal_surface_t, base);
 
-    w = CLAMP(w, 0, internal_surface->width);
-    w = MIN(internal_surface->width - p1->x, w);
-    const uint16_t end_x = p1->x + w;
+    point_t p1 = line->start;
+    point_t p2 = line->end;
+    int dx = abs(p2.x - p1.x);
+    int dy = abs(p2.y - p1.y);
+    int sx = p1.x < p2.x ? 1 : -1;
+    int sy = p1.y < p2.y ? 1 : -1;
+    int err = dx - dy;
 
-    h = CLAMP(h, 0, internal_surface->height);
-    h = MIN(internal_surface->height - p1->y, h);
-    const uint16_t end_y = p1->y + h;
-
-    for (int x = p1->x; x < end_x; x++) {
-        for (int y = p1->y; y < end_y; y++) {
-            const point_t p2 = {.x = x, .y = y};
-            int rindex = point_to_sraster(&p2, internal_surface->height);
-            memcpy(&internal_surface->buffer[rindex * sizeof(color_t)], color, sizeof(color_t));
+    while (true) {
+        const point_t point = {.x = p1.x, .y = p1.y};
+        surface->draw_pixel(surface, &point, line_color);
+        if (p1.x == p2.x && p1.y == p2.y) {
+            break;
+        }
+        int e2 = 2 * err;
+        if (e2 > -dy) {
+            err -= dy;
+            p1.x += sx;
+        }
+        if (e2 < dx) {
+            err += dx;
+            p1.y += sy;
         }
     }
     internal_surface->is_dirty = true;
+
+err:
+    return ret;
+}
+
+static esp_err_t surface_draw_pixel(surface_t *surface, const point_t *point, const color_t *color) {
+    esp_err_t ret = ESP_OK;
+    ESP_GOTO_ON_FALSE(surface && point && color, ESP_ERR_INVALID_ARG, err, TAG, "invalid argument");
+    internal_surface_t *internal_surface = __containerof(surface, internal_surface_t, base);
+
+    uint16_t x = CLAMP(point->x, 0, internal_surface->width - 1);
+    uint16_t y = CLAMP(point->y, 0, internal_surface->height - 1);
+
+    int rindex =
+        internal_surface->led_driver->point_to_index(internal_surface->led_driver, x, y, internal_surface->height);
+    memcpy(&internal_surface->buffer[rindex * sizeof(color_t)], color, sizeof(color_t));
+    internal_surface->is_dirty = true;
+err:
+    return ret;
+}
+
+static esp_err_t surface_draw_rect(surface_t *surface, const rect_t *rect, const rect_style_t *rect_style,
+                                   const color_t *line_color) {
+    UNUSED(rect_style);
+    esp_err_t ret = ESP_OK;
+    ESP_GOTO_ON_FALSE(surface && rect && line_color, ESP_ERR_INVALID_ARG, err, TAG, "invalid argument");
+
+    // An unfilled rectangle is 4 lines
+    const size_t width = abs(rect->bottom_right.x - rect->top_left.x);
+    const size_t height = abs(rect->bottom_right.y - rect->top_left.y);
+
+    line_t top = {
+        .start = rect->top_left,
+        .end =
+            {
+                .x = rect->top_left.x + width,
+                .y = rect->top_left.y,
+            },
+    };
+    line_t bottom = {
+        .start =
+            {
+                .x = rect->top_left.x,
+                .y = rect->top_left.y + height,
+            },
+        .end = rect->bottom_right,
+    };
+    line_t left = {
+        .start = rect->top_left,
+        .end =
+            {
+                .x = rect->top_left.x,
+                .y = rect->top_left.y + height,
+            },
+    };
+    line_t right = {
+        .start =
+            {
+                .x = rect->top_left.x + width,
+                .y = rect->top_left.y,
+            },
+        .end = rect->bottom_right,
+    };
+
+    ESP_ERROR_CHECK(surface->draw_line(surface, &top, &rect_style->line_style, line_color));
+    ESP_ERROR_CHECK(surface->draw_line(surface, &bottom, &rect_style->line_style, line_color));
+    ESP_ERROR_CHECK(surface->draw_line(surface, &left, &rect_style->line_style, line_color));
+    ESP_ERROR_CHECK(surface->draw_line(surface, &right, &rect_style->line_style, line_color));
 err:
     return ret;
 }
@@ -90,7 +170,9 @@ esp_err_t surface_create(const surface_config_t *config, led_driver_handle_t led
     ESP_GOTO_ON_FALSE(internal_surface, ESP_ERR_NO_MEM, err, TAG, "no mem for surface");
 
     internal_surface->base.clear = surface_clear;
-    internal_surface->base.fill = surface_fill;
+    internal_surface->base.draw_line = surface_draw_line;
+    internal_surface->base.draw_pixel = surface_draw_pixel;
+    internal_surface->base.draw_rect = surface_draw_rect;
     internal_surface->base.render = surface_render;
     internal_surface->led_driver = led_driver;
     internal_surface->is_dirty = false;

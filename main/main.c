@@ -38,13 +38,15 @@ void app_main(void) {
 
     ESP_LOGI(TAG, "startup complete");
 
-    const uint16_t rect_w = CONFIG_LED_COLS;
-    const uint16_t rect_h = 1;
+    rect_t rect = {
+        .top_left = {0, 0},
+        .bottom_right = {CONFIG_LED_COLS - 1, CONFIG_LED_ROWS - 1},
+    };
     while (1) {
         color_hsv2rgb(&hsv, &color);
 
         surface->clear(surface, &color_off);
-        surface->fill(surface, &point, rect_w, rect_h, &color);
+        surface->draw_rect(surface, &rect, NULL, &color);
         surface->render(surface);
         point.y = (point.y + 1) % CONFIG_LED_ROWS;
 
