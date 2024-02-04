@@ -21,12 +21,15 @@ typedef struct {
 /**
  * @brief Convert a point to a serpentine raster index
  */
-static inline int led_panel_driver_point_to_index(uint16_t x, uint16_t y, size_t y_max) {
+static int led_panel_driver_point_to_index(led_driver_t *driver, uint16_t x, uint16_t y, size_t y_max) {
+    UNUSED(driver);
+    int result;
     if (x % 2 == 0) {
-        return x * y_max + y;
+        result = x * y_max + y;
     } else {
-        return (x * y_max) + (y_max - 1 - y);
+        result = (x * y_max) + (y_max - 1 - y);
     }
+    return (int)result;
 }
 
 static esp_err_t led_panel_driver_write_blocking(led_driver_t *driver, const void *data, size_t size__bytes) {

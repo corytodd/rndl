@@ -22,10 +22,13 @@ struct led_driver_t {
 
     /**
      * @brief Convert point to a linear index
+     * @details
+     * Caller is responsible for bounds checking the result
      * @param driver LED driver instance
      * @param x X coordinate
      * @param y Y coordinate
      * @param y_max Maximum Y coordinate
+     * @return Linear index. A negative value means one or both dimensions overflowed.
      */
     int (*point_to_index)(led_driver_t *driver, uint16_t x, uint16_t y, size_t y_max);
 

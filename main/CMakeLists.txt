@@ -12,3 +12,6 @@ idf_component_register(SRCS ${SOURCES}
 
 # Enable anonymous structs
 target_compile_options(${COMPONENT_LIB} PRIVATE -fms-extensions)
+# Force all warnings to be errors
+target_compile_options(${COMPONENT_LIB} PRIVATE -Werror -Wall -Wextra
+                        -Werror=unused-variable)

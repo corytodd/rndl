@@ -15,8 +15,8 @@ typedef struct {
     surface_t base;
     led_driver_handle_t led_driver;
     bool is_dirty;
-    int width;
-    int height;
+    uint16_t width;
+    uint16_t height;
     size_t buffer_size__bytes;
     uint8_t *buffer;
 } internal_surface_t;
@@ -80,11 +80,14 @@ static esp_err_t surface_draw_pixel(surface_t *surface, const point_t *point, co
     ESP_GOTO_ON_FALSE(surface && point && color, ESP_ERR_INVALID_ARG, err, TAG, "invalid argument");
     internal_surface_t *internal_surface = __containerof(surface, internal_surface_t, base);
 
+    // TODO: we could add a wrapping feature
     uint16_t x = CLAMP(point->x, 0, internal_surface->width - 1);
     uint16_t y = CLAMP(point->y, 0, internal_surface->height - 1);
 
     int rindex =
         internal_surface->led_driver->point_to_index(internal_surface->led_driver, x, y, internal_surface->height);
+    ESP_ERROR_CHECK(rindex < 0 || rindex >= internal_surface->buffer_size__bytes ? ESP_ERR_INVALID_ARG : ESP_OK);
+
     memcpy(&internal_surface->buffer[rindex * sizeof(color_t)], color, sizeof(color_t));
     internal_surface->is_dirty = true;
 err:
@@ -183,7 +186,8 @@ esp_err_t surface_create(const surface_config_t *config, led_driver_handle_t led
     ESP_GOTO_ON_FALSE(internal_surface->buffer, ESP_ERR_NO_MEM, err, TAG, "no mem for surface buffer");
     *surface_handle = &internal_surface->base;
 
-    ESP_LOGD(TAG, "surface created: %d x %d", config->width, config->height);
+    ESP_LOGD(TAG, "surface created: %d x %d (buffer %d bytes)", config->width, config->height,
+             internal_surface->buffer_size__bytes);
 err:
     return ret;
 }

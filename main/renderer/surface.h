@@ -75,8 +75,8 @@ struct surface_t {
  * @brief Surface configuration
  */
 typedef struct {
-    int width;  /*!< Width of the surface in pixels*/
-    int height; /*!< Height of the surface in pixels*/
+    uint16_t width;  /*!< Width of the surface in pixels*/
+    uint16_t height; /*!< Height of the surface in pixels*/
 } surface_config_t;
 
 /**
