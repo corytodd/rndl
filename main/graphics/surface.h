@@ -1,10 +1,10 @@
 #pragma once
 
 #include "color/color.h"
+#include "graphics/line.h"
+#include "graphics/point.h"
+#include "graphics/rect.h"
 #include "led_driver/led_driver.h"
-#include "renderer/line.h"
-#include "renderer/point.h"
-#include "renderer/rect.h"
 
 #include <esp_err.h>
 #include <stdint.h>

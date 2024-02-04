@@ -1,5 +1,5 @@
+#include "graphics/surface.h"
 #include "led_driver/led_driver.h"
-#include "renderer/surface.h"
 
 #include <esp_check.h>
 #include <esp_err.h>

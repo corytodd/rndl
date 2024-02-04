@@ -1,7 +1,7 @@
 #pragma once
 
 #include "color/color.h"
-#include "renderer/point.h"
+#include "graphics/point.h"
 
 #ifdef __cplusplus
 extern "C" {

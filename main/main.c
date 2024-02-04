@@ -1,8 +1,9 @@
 #include "color/color.h"
+#include "graphics/point.h"
+#include "graphics/surface.h"
 #include "led_driver/led_panel_driver.h"
 #include "platform.h"
-#include "renderer/point.h"
-#include "renderer/surface.h"
+#include "utils.h"
 
 #include <esp_err.h>
 #include <esp_log.h>
@@ -31,7 +32,7 @@ const surface_config_t surface_config = {
 static const color_t color_off = {0};
 
 // Draw corners points on extend of surface
-static void pattern_surface_extent(void) {
+MAYBE_UNUSED static void pattern_surface_extent(void) {
     ESP_LOGI(TAG, "surface extent");
 
     hsv_t hsv = {.hue = 100, .saturation = 100, .value = 50};
@@ -74,7 +75,7 @@ static void pattern_surface_extent(void) {
 }
 
 // Loop a shrinking rectangle forever
-static void pattern_strobing_rectangle(void) {
+MAYBE_UNUSED static void pattern_strobing_rectangle(void) {
     ESP_LOGI(TAG, "strobing rectangle");
 
     hsv_t hsv = {.hue = 100, .saturation = 100, .value = 50};
