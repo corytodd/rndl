@@ -18,6 +18,17 @@ typedef struct {
     rmt_transmit_config_t tx_config;
 } led_panel_driver_t;
 
+/**
+ * @brief Convert a point to a serpentine raster index
+ */
+static inline int led_panel_driver_point_to_index(int x, int y, int y_max) {
+    if (x % 2 == 0) {
+        return x * y_max + y;
+    } else {
+        return (x * y_max) + (y_max - 1 - y);
+    }
+}
+
 static esp_err_t led_panel_driver_write_blocking(led_driver_t *driver, const void *data, size_t size__bytes) {
     esp_err_t ret = ESP_OK;
     led_panel_driver_t *panel_driver = NULL;
@@ -45,6 +56,7 @@ esp_err_t led_panel_driver_new(const led_panel_driver_config_t *config, led_driv
     ESP_GOTO_ON_FALSE(panel_driver, ESP_ERR_NO_MEM, err, TAG, "no mem for led panel driver");
 
     panel_driver->base.write_blocking = led_panel_driver_write_blocking;
+    panel_driver->base.point_to_index = led_panel_driver_point_to_index;
     ESP_LOGD(TAG, "create RMT TX channel");
     rmt_tx_channel_config_t tx_chan_config = {
         .clk_src = RMT_CLK_SRC_DEFAULT,

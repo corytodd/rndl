@@ -19,6 +19,16 @@ typedef struct led_driver_t *led_driver_handle_t;
  * @brief LED driver interface
  */
 struct led_driver_t {
+
+    /**
+     * @brief Convert point to a linear index
+     * @param driver LED driver instance
+     * @param x X coordinate
+     * @param y Y coordinate
+     * @param y_max Maximum Y coordinate
+     */
+    int (*point_to_index)(led_driver_t *driver, int x, int y, int y_max);
+
     /**
      * @brief Write data to the LED driver
      * @param driver LED driver instance
