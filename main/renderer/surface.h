@@ -3,6 +3,7 @@
 #include "color/color.h"
 #include "led_driver/led_driver.h"
 #include "renderer/point.h"
+#include "renderer/rect.h"
 
 #include <esp_err.h>
 #include <stdint.h>
@@ -22,22 +23,20 @@ struct surface_t {
      * @param surface Surface instance
      * @param color Color to clear the surface with
      * @return ESP_OK on success
-     * @return ESP_ERR_INVALID_ARG when surface or color is NULL
+     * @return ESP_ERR_INVALID_ARG
      */
     esp_err_t (*clear)(surface_t *surface, const color_t *color);
 
     /**
-     * @brief Fill a rectangle with a color
+     * @brief Draw a rectangle
      * @param surface Surface instance
-     * @param p1 Top-left corner of the rectangle
-     * @param w Width of the rectangle
-     * @param h Height of the rectangle
+     * @param rect Rectangle to draw
+     * @param rect_style Style of rectangle
      * @param color Color to fill the rectangle with
      * @return ESP_OK on success
-     * @return ESP_ERR_INVALID_ARG when surface or color is NULL or
-     * if width or height exceeds surface dimensions
+     * @return ESP_ERR_INVALID_ARG
      */
-    esp_err_t (*fill)(surface_t *surface, const point_t *p1, uint16_t w, uint16_t h, const color_t *color);
+    esp_err_t (*draw_rect)(surface_t *surface, const rect_style_t *rect, const rect_style_t *rect_style);
 
     /**
      * @brief Render the surface into the LED driver
