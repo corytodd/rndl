@@ -22,7 +22,7 @@ struct surface_t {
     /**
      * @brief Clear the surface with a color
      * @param surface Surface instance
-     * @param color Color to clear the surface with
+     * @param color Fill entire surface with this color
      * @return ESP_OK on success
      * @return ESP_ERR_INVALID_ARG
      */
@@ -33,18 +33,18 @@ struct surface_t {
      * @param surface Surface instance
      * @param line Line to draw
      * @param line_style Style of line
-     * @param color Color to fill the rectangle with
+     * @param line_color Line color
      * @return ESP_OK on success
      * @return ESP_ERR_INVALID_ARG
      */
     esp_err_t (*draw_line)(surface_t *surface, const line_t *line, const line_style_t *line_style,
-                           const color_t *color);
+                           const color_t *line_color);
 
     /**
      * @brief Draw a pixel
      * @param surface Surface instance
      * @param point Point to draw
-     * @param color Color to fill the rectangle with
+     * @param color Pixel color
      * @return ESP_OK on success
      * @return ESP_ERR_INVALID_ARG
      */
@@ -55,17 +55,18 @@ struct surface_t {
      * @param surface Surface instance
      * @param rect Rectangle to draw
      * @param rect_style Style of rectangle
-     * @param color Color to fill the rectangle with
+     * @param line_color Outline color
      * @return ESP_OK on success
      * @return ESP_ERR_INVALID_ARG
      */
-    esp_err_t (*draw_rect)(surface_t *surface, const rect_style_t *rect, const rect_style_t *rect_style);
+    esp_err_t (*draw_rect)(surface_t *surface, const rect_style_t *rect, const rect_style_t *rect_style,
+                           const color_t *line_color);
 
     /**
      * @brief Render the surface into the LED driver
      * @param surface Surface instance
      * @return ESP_OK on success
-     * @return ESP_ERR_INVALID_ARG when surface is NULL
+     * @return ESP_ERR_INVALID_ARG
      */
     esp_err_t (*render)(surface_t *surface);
 };
