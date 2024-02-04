@@ -91,16 +91,18 @@ static esp_err_t surface_draw_pixel(surface_t *surface, const point_t *point, co
     internal_surface_t *internal_surface = __containerof(surface, internal_surface_t, base);
 
     // TODO: we could add a wrapping feature
-    uint16_t x = CLAMP(point->x, 0, internal_surface->width - 1);
-    uint16_t y = CLAMP(point->y, 0, internal_surface->height - 1);
+    if (point->x >= internal_surface->width || point->y >= internal_surface->height) {
+        goto out;
+    }
+    int rindex = internal_surface->led_driver->point_to_index(internal_surface->led_driver, point->x, point->y,
+                                                              internal_surface->height);
 
-    int rindex =
-        internal_surface->led_driver->point_to_index(internal_surface->led_driver, x, y, internal_surface->height);
     ESP_ERROR_CHECK(rindex < 0 || rindex >= internal_surface->buffer_size__bytes ? ESP_ERR_INVALID_ARG : ESP_OK);
 
     memcpy(&internal_surface->buffer[rindex * sizeof(color_t)], color, sizeof(color_t));
     internal_surface->is_dirty = true;
 err:
+out:
     return ret;
 }
 
