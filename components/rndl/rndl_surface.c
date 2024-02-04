@@ -38,6 +38,16 @@ err:
     return ret;
 }
 
+static esp_err_t surface_draw_circle(surface_t *surface, const point_t *center, uint16_t radius,
+                                     const line_style_t *line_style, const color_t *line_color) {
+    UNUSED(surface);
+    UNUSED(center);
+    UNUSED(radius);
+    UNUSED(line_style);
+    UNUSED(line_color);
+    return ESP_ERR_NOT_SUPPORTED;
+}
+
 static esp_err_t surface_draw_line(surface_t *surface, const line_t *line, const line_style_t *line_style,
                                    const color_t *line_color) {
     UNUSED(line_style);
@@ -173,6 +183,7 @@ esp_err_t surface_create(const surface_config_t *config, led_driver_handle_t led
     ESP_GOTO_ON_FALSE(internal_surface, ESP_ERR_NO_MEM, err, TAG, "no mem for surface");
 
     internal_surface->base.clear = surface_clear;
+    internal_surface->base.draw_circle = surface_draw_circle;
     internal_surface->base.draw_line = surface_draw_line;
     internal_surface->base.draw_pixel = surface_draw_pixel;
     internal_surface->base.draw_rect = surface_draw_rect;

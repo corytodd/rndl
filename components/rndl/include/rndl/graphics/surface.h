@@ -29,6 +29,19 @@ struct surface_t {
     esp_err_t (*clear)(surface_t *surface, const color_t *color);
 
     /**
+     * @brief Draw a circle
+     * @param surface Surface instance
+     * @param center Center of the circle
+     * @param radius Radius of the circle in pixels
+     * @param line_style Style of line, optional
+     * @param line_color Line color
+     * @return ESP_OK on success
+     * @return ESP_ERR_INVALID_ARG
+     */
+    esp_err_t (*draw_circle)(surface_t *surface, const point_t *center, uint16_t radius, const line_style_t *line_style,
+                             const color_t *line_color);
+
+    /**
      * @brief Draw a line
      * @param surface Surface instance
      * @param line Line to draw

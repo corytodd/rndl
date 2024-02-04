@@ -15,6 +15,7 @@ extern "C" {
 #define KB(x)              ((x) * 1024)
 #define MB(x)              ((x) * 1024 * 1024)
 #define FPS_TO_MS(fps)     (1000 / (fps))
+#define COUNT_OF(x)        (sizeof(x) / sizeof(x[0]))
 
 #ifdef __cplusplus
 }

@@ -138,6 +138,30 @@ MAYBE_UNUSED static void pattern_angled_lines(void) {
     }
 }
 
+// Draw concentric circles on the surface
+MAYBE_UNUSED static void pattern_circles(void) {
+    ESP_LOGI(TAG, "raindrop");
+
+    hsv_t hsv = {.hue = 100, .saturation = 100, .value = 50};
+    color_t color = {0};
+
+    point_t center = {CONFIG_RNDL_COLS / 2, CONFIG_RNDL_ROWS / 2};
+    uint16_t radii[] = {2, 4, 8};
+
+    while (1) {
+        color_hsv2rgb(&hsv, &color);
+
+        surface->clear(surface, &color_off);
+
+        for (int i = 0; i < COUNT_OF(radii); i++) {
+            surface->draw_circle(surface, &center, radii[i], NULL, &color);
+            radii[i] = (radii[i] + 1) % (CONFIG_RNDL_COLS / 2);
+        }
+        surface->render(surface);
+        hsv.hue++;
+    }
+}
+
 void app_main(void) {
     ESP_LOGI(TAG, "initializing");
     ESP_ERROR_CHECK(led_panel_driver_new(&config, &led_driver));
