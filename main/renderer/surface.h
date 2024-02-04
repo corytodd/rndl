@@ -32,7 +32,7 @@ struct surface_t {
      * @brief Draw a line
      * @param surface Surface instance
      * @param line Line to draw
-     * @param line_style Style of line
+     * @param line_style Style of line, optional
      * @param line_color Line color
      * @return ESP_OK on success
      * @return ESP_ERR_INVALID_ARG
@@ -54,12 +54,12 @@ struct surface_t {
      * @brief Draw a rectangle
      * @param surface Surface instance
      * @param rect Rectangle to draw
-     * @param rect_style Style of rectangle
+     * @param rect_style Style of rectangle, optional
      * @param line_color Outline color
      * @return ESP_OK on success
      * @return ESP_ERR_INVALID_ARG
      */
-    esp_err_t (*draw_rect)(surface_t *surface, const rect_style_t *rect, const rect_style_t *rect_style,
+    esp_err_t (*draw_rect)(surface_t *surface, const rect_t *rect, const rect_style_t *rect_style,
                            const color_t *line_color);
 
     /**
