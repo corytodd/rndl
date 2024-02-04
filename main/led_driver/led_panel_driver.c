@@ -21,7 +21,7 @@ typedef struct {
 /**
  * @brief Convert a point to a serpentine raster index
  */
-static inline int led_panel_driver_point_to_index(int x, int y, int y_max) {
+static inline int led_panel_driver_point_to_index(uint16_t x, uint16_t y, size_t y_max) {
     if (x % 2 == 0) {
         return x * y_max + y;
     } else {

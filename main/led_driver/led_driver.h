@@ -27,7 +27,7 @@ struct led_driver_t {
      * @param y Y coordinate
      * @param y_max Maximum Y coordinate
      */
-    int (*point_to_index)(led_driver_t *driver, int x, int y, int y_max);
+    int (*point_to_index)(led_driver_t *driver, uint16_t x, uint16_t y, size_t y_max);
 
     /**
      * @brief Write data to the LED driver
