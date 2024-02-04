@@ -13,4 +13,4 @@ from pytest_embedded import Dut
 @pytest.mark.esp32h2
 @pytest.mark.generic
 def test_led_strip_example(dut: Dut) -> None:
-    dut.expect_exact('lighty: starting Lighty')
+    dut.expect_exact('lighty: startup complete')
