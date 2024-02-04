@@ -41,6 +41,16 @@ struct surface_t {
                            const color_t *color);
 
     /**
+     * @brief Draw a pixel
+     * @param surface Surface instance
+     * @param point Point to draw
+     * @param color Color to fill the rectangle with
+     * @return ESP_OK on success
+     * @return ESP_ERR_INVALID_ARG
+     */
+    esp_err_t (*draw_pixel)(surface_t *surface, const point_t *point, const color_t *color);
+
+    /**
      * @brief Draw a rectangle
      * @param surface Surface instance
      * @param rect Rectangle to draw
