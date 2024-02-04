@@ -30,7 +30,7 @@ const surface_config_t surface_config = {
 void app_main(void) {
     const color_t color_off = {0};
     hsv_t hsv = {.hue = 100, .saturation = 100, .value = 50};
-    color_t pixel = {0};
+    color_t color = {0};
     point_t point = {0};
 
     ESP_ERROR_CHECK(led_panel_driver_new(&config, &led_driver));
@@ -41,10 +41,10 @@ void app_main(void) {
     const uint16_t rect_w = CONFIG_LED_COLS;
     const uint16_t rect_h = 1;
     while (1) {
-        color_hsv2rgb(&hsv, &pixel);
+        color_hsv2rgb(&hsv, &color);
 
         surface->clear(surface, &color_off);
-        surface->fill(surface, &point, rect_w, rect_h, &pixel);
+        surface->fill(surface, &point, rect_w, rect_h, &color);
         surface->render(surface);
         point.y = (point.y + 1) % CONFIG_LED_ROWS;
 
