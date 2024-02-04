@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -8,6 +10,8 @@ extern "C" {
 #define MIN(a, b)          ((a) < (b) ? (a) : (b))
 #define CLAMP(x, min, max) (MAX((min), MIN((max), (x))))
 #define PACKED             __attribute__((packed))
+
+typedef void (*fn_delay_ms)(uint32_t ms);
 
 #ifdef __cplusplus
 }

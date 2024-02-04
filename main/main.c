@@ -19,7 +19,9 @@
 
 static const char *TAG = "lighty";
 
-static __aligned(4) uint8_t display_buffer[LED_COUNT * LED_CHAN];
+static void sys_delay(uint32_t ms) {
+    vTaskDelay(pdMS_TO_TICKS(ms));
+}
 
 void app_main(void) {
     const hsv_t hsv = {.hue = 0, .saturation = 100, .value = 10};
