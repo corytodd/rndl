@@ -73,7 +73,7 @@ static esp_err_t rmt_led_encoder_reset(rmt_encoder_t *encoder) {
     return ESP_OK;
 }
 
-esp_err_t rmt_new_led_encoder(const led_encoder_config_t *config, rmt_encoder_handle_t *ret_encoder) {
+esp_err_t rmt_new_led_encoder(const rndl_led_encoder_config_t *config, rmt_encoder_handle_t *ret_encoder) {
     esp_err_t ret = ESP_OK;
     rmt_led_encoder_t *led_encoder = NULL;
     ESP_GOTO_ON_FALSE(config && ret_encoder, ESP_ERR_INVALID_ARG, err, TAG, "invalid argument");

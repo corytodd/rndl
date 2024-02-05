@@ -8,13 +8,7 @@
 
 #include <stdint.h>
 
-/**
- * @brief Simple helper function, converting HSV color space to RGB color space
- *
- * Wiki: https://en.wikipedia.org/wiki/HSL_and_HSV
- *
- */
-void color_hsv2rgb(const hsv_t *hsv, color_t *pixel) {
+void rndl_color_hsv2color24(const rndl_hsv_t *hsv, rndl_color24_t *color) {
     const uint32_t hue = hsv->hue % 360; // h -> [0,360]
     uint32_t rgb_max = hsv->value * 2.55f;
     uint32_t rgb_min = rgb_max * (100 - hsv->saturation) / 100.0f;
@@ -27,34 +21,34 @@ void color_hsv2rgb(const hsv_t *hsv, color_t *pixel) {
 
     switch (i) {
         case 0:
-            pixel->red = rgb_max;
-            pixel->green = rgb_min + rgb_adj;
-            pixel->blue = rgb_min;
+            color->red = rgb_max;
+            color->green = rgb_min + rgb_adj;
+            color->blue = rgb_min;
             break;
         case 1:
-            pixel->red = rgb_max - rgb_adj;
-            pixel->green = rgb_max;
-            pixel->blue = rgb_min;
+            color->red = rgb_max - rgb_adj;
+            color->green = rgb_max;
+            color->blue = rgb_min;
             break;
         case 2:
-            pixel->red = rgb_min;
-            pixel->green = rgb_max;
-            pixel->blue = rgb_min + rgb_adj;
+            color->red = rgb_min;
+            color->green = rgb_max;
+            color->blue = rgb_min + rgb_adj;
             break;
         case 3:
-            pixel->red = rgb_min;
-            pixel->green = rgb_max - rgb_adj;
-            pixel->blue = rgb_max;
+            color->red = rgb_min;
+            color->green = rgb_max - rgb_adj;
+            color->blue = rgb_max;
             break;
         case 4:
-            pixel->red = rgb_min + rgb_adj;
-            pixel->green = rgb_min;
-            pixel->blue = rgb_max;
+            color->red = rgb_min + rgb_adj;
+            color->green = rgb_min;
+            color->blue = rgb_max;
             break;
         default:
-            pixel->red = rgb_max;
-            pixel->green = rgb_min;
-            pixel->blue = rgb_max - rgb_adj;
+            color->red = rgb_max;
+            color->green = rgb_min;
+            color->blue = rgb_max - rgb_adj;
             break;
     }
 }

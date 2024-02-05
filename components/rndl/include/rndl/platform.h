@@ -9,13 +9,7 @@ extern "C" {
 /**
  * @brief Platform delay definition
  */
-typedef void (*fn_delay_ms)(uint32_t ms);
-
-/**
- * @brief Delay implementation for this platform
- * @param delay_ms Time to delay in milliseconds
- */
-void platform_delay_ms(uint32_t delay_ms);
+typedef void (*rndl_platform_delay_ms)(uint32_t ms);
 
 #ifdef __cplusplus
 }

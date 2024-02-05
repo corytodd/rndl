@@ -17,7 +17,7 @@ extern "C" {
  */
 typedef struct {
     uint32_t resolution; /*!< Encoder resolution, in Hz */
-} led_encoder_config_t;
+} rndl_led_encoder_config_t;
 
 /**
  * @brief Create RMT encoder for encoding LED pixels into RMT symbols
@@ -29,7 +29,7 @@ typedef struct {
  *      - ESP_ERR_NO_MEM out of memory when creating led strip encoder
  *      - ESP_OK if creating encoder successfully
  */
-esp_err_t rmt_new_led_encoder(const led_encoder_config_t *config, rmt_encoder_handle_t *ret_encoder);
+esp_err_t rmt_new_led_encoder(const rndl_led_encoder_config_t *config, rmt_encoder_handle_t *ret_encoder);
 
 #ifdef __cplusplus
 }

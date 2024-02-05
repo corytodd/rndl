@@ -9,11 +9,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-static const char *TAG = "surface";
+static const char *TAG = "rndl_surface";
 
 typedef struct {
-    surface_t base;
-    led_driver_handle_t led_driver;
+    rndl_surface_t base;
+    rndl_led_driver_handle_t led_driver;
     bool is_dirty;
     uint16_t width;
     uint16_t height;
@@ -21,7 +21,7 @@ typedef struct {
     uint8_t *buffer;
 } internal_surface_t;
 
-static esp_err_t surface_clear(surface_t *surface, const color_t *color) {
+static esp_err_t surface_clear(rndl_surface_t *surface, const rndl_color24_t *color) {
     esp_err_t ret = ESP_OK;
     ESP_GOTO_ON_FALSE(surface && color, ESP_ERR_INVALID_ARG, err, TAG, "invalid argument");
     internal_surface_t *internal_surface = __containerof(surface, internal_surface_t, base);
@@ -29,34 +29,36 @@ static esp_err_t surface_clear(surface_t *surface, const color_t *color) {
     if (color->red == 0 && color->green == 0 && color->blue == 0) {
         memset(internal_surface->buffer, 0, internal_surface->buffer_size__bytes);
     } else {
-        for (int i = 0; i < internal_surface->buffer_size__bytes; i += sizeof(color_t)) {
-            memcpy(&internal_surface->buffer[i], color, sizeof(color_t));
+        for (int i = 0; i < internal_surface->buffer_size__bytes; i += sizeof(rndl_color24_t)) {
+            memcpy(&internal_surface->buffer[i], color, sizeof(rndl_color24_t));
         }
     }
     internal_surface->is_dirty = true;
+
 err:
     return ret;
 }
 
-static esp_err_t surface_draw_circle(surface_t *surface, const point_t *center, uint16_t radius,
-                                     const line_style_t *line_style, const color_t *line_color) {
-    UNUSED(surface);
-    UNUSED(center);
-    UNUSED(radius);
-    UNUSED(line_style);
-    UNUSED(line_color);
+static esp_err_t surface_draw_circle(rndl_surface_t *surface, const rndl_circle_t *circle,
+                                     const rndl_color24_t *line_color, const rndl_style_t *style,
+                                     const rndl_color24_t *fill_color) {
+    RNDL_UNUSED(surface);
+    RNDL_UNUSED(circle);
+    RNDL_UNUSED(line_color);
+    RNDL_UNUSED(style);
+    RNDL_UNUSED(fill_color);
     return ESP_ERR_NOT_SUPPORTED;
 }
 
-static esp_err_t surface_draw_line(surface_t *surface, const line_t *line, const line_style_t *line_style,
-                                   const color_t *line_color) {
-    UNUSED(line_style);
+static esp_err_t surface_draw_line(rndl_surface_t *surface, const rndl_line_t *line, const rndl_color24_t *line_color,
+                                   const rndl_style_t *style) {
+    RNDL_UNUSED(style);
     esp_err_t ret = ESP_OK;
     ESP_GOTO_ON_FALSE(surface && line && line_color, ESP_ERR_INVALID_ARG, err, TAG, "invalid argument");
     internal_surface_t *internal_surface = __containerof(surface, internal_surface_t, base);
 
-    point_t p1 = line->start;
-    point_t p2 = line->end;
+    rndl_point_t p1 = line->start;
+    rndl_point_t p2 = line->end;
     int dx = abs(p2.x - p1.x);
     int dy = abs(p2.y - p1.y);
     int sx = p1.x < p2.x ? 1 : -1;
@@ -64,7 +66,7 @@ static esp_err_t surface_draw_line(surface_t *surface, const line_t *line, const
     int err = dx - dy;
 
     while (true) {
-        const point_t point = {.x = p1.x, .y = p1.y};
+        const rndl_point_t point = {.x = p1.x, .y = p1.y};
         surface->draw_pixel(surface, &point, line_color);
         if (p1.x == p2.x && p1.y == p2.y) {
             break;
@@ -85,7 +87,7 @@ err:
     return ret;
 }
 
-static esp_err_t surface_draw_pixel(surface_t *surface, const point_t *point, const color_t *color) {
+static esp_err_t surface_draw_pixel(rndl_surface_t *surface, const rndl_point_t *point, const rndl_color24_t *color) {
     esp_err_t ret = ESP_OK;
     ESP_GOTO_ON_FALSE(surface && point && color, ESP_ERR_INVALID_ARG, err, TAG, "invalid argument");
     internal_surface_t *internal_surface = __containerof(surface, internal_surface_t, base);
@@ -99,24 +101,26 @@ static esp_err_t surface_draw_pixel(surface_t *surface, const point_t *point, co
 
     ESP_ERROR_CHECK(rindex < 0 || rindex >= internal_surface->buffer_size__bytes ? ESP_ERR_INVALID_ARG : ESP_OK);
 
-    memcpy(&internal_surface->buffer[rindex * sizeof(color_t)], color, sizeof(color_t));
+    memcpy(&internal_surface->buffer[rindex * sizeof(rndl_color24_t)], color, sizeof(rndl_color24_t));
     internal_surface->is_dirty = true;
+
 err:
 out:
     return ret;
 }
 
-static esp_err_t surface_draw_rect(surface_t *surface, const rect_t *rect, const rect_style_t *rect_style,
-                                   const color_t *line_color) {
-    UNUSED(rect_style);
+static esp_err_t surface_draw_rect(rndl_surface_t *surface, const rndl_rect_t *rect, const rndl_color24_t *line_color,
+                                   const rndl_style_t *style, const rndl_color24_t *fill_color) {
+    RNDL_UNUSED(fill_color);
     esp_err_t ret = ESP_OK;
     ESP_GOTO_ON_FALSE(surface && rect && line_color, ESP_ERR_INVALID_ARG, err, TAG, "invalid argument");
+    internal_surface_t *internal_surface = __containerof(surface, internal_surface_t, base);
 
     // An unfilled rectangle is 4 lines
     const size_t width = abs(rect->bottom_right.x - rect->top_left.x);
     const size_t height = abs(rect->bottom_right.y - rect->top_left.y);
 
-    line_t top = {
+    rndl_line_t top = {
         .start = rect->top_left,
         .end =
             {
@@ -124,7 +128,7 @@ static esp_err_t surface_draw_rect(surface_t *surface, const rect_t *rect, const
                 .y = rect->top_left.y,
             },
     };
-    line_t bottom = {
+    rndl_line_t bottom = {
         .start =
             {
                 .x = rect->top_left.x,
@@ -132,7 +136,7 @@ static esp_err_t surface_draw_rect(surface_t *surface, const rect_t *rect, const
             },
         .end = rect->bottom_right,
     };
-    line_t left = {
+    rndl_line_t left = {
         .start = rect->top_left,
         .end =
             {
@@ -140,7 +144,7 @@ static esp_err_t surface_draw_rect(surface_t *surface, const rect_t *rect, const
                 .y = rect->top_left.y + height,
             },
     };
-    line_t right = {
+    rndl_line_t right = {
         .start =
             {
                 .x = rect->top_left.x + width,
@@ -149,15 +153,17 @@ static esp_err_t surface_draw_rect(surface_t *surface, const rect_t *rect, const
         .end = rect->bottom_right,
     };
 
-    ESP_ERROR_CHECK(surface->draw_line(surface, &top, &rect_style->line_style, line_color));
-    ESP_ERROR_CHECK(surface->draw_line(surface, &bottom, &rect_style->line_style, line_color));
-    ESP_ERROR_CHECK(surface->draw_line(surface, &left, &rect_style->line_style, line_color));
-    ESP_ERROR_CHECK(surface->draw_line(surface, &right, &rect_style->line_style, line_color));
+    ESP_ERROR_CHECK(surface->draw_line(surface, &top, line_color, style));
+    ESP_ERROR_CHECK(surface->draw_line(surface, &bottom, line_color, style));
+    ESP_ERROR_CHECK(surface->draw_line(surface, &left, line_color, style));
+    ESP_ERROR_CHECK(surface->draw_line(surface, &right, line_color, style));
+    internal_surface->is_dirty = true;
+
 err:
     return ret;
 }
 
-static esp_err_t surface_render(surface_t *surface) {
+static esp_err_t surface_render(rndl_surface_t *surface) {
     esp_err_t ret = ESP_OK;
     ESP_GOTO_ON_FALSE(surface, ESP_ERR_INVALID_ARG, err, TAG, "invalid argument: surface is NULL");
     internal_surface_t *internal_surface = __containerof(surface, internal_surface_t, base);
@@ -175,8 +181,8 @@ out:
     return ret;
 }
 
-esp_err_t surface_create(const surface_config_t *config, led_driver_handle_t led_driver,
-                         surface_handle_t *surface_handle) {
+esp_err_t rndl_surface_create(const rndl_surface_config_t *config, rndl_led_driver_handle_t led_driver,
+                              rndl_surface_handle_t *surface_handle) {
     esp_err_t ret = ESP_OK;
     internal_surface_t *internal_surface = NULL;
     ESP_GOTO_ON_FALSE(config && surface_handle, ESP_ERR_INVALID_ARG, err, TAG, "invalid argument");
@@ -194,7 +200,7 @@ esp_err_t surface_create(const surface_config_t *config, led_driver_handle_t led
     internal_surface->is_dirty = false;
     internal_surface->width = config->width;
     internal_surface->height = config->height;
-    internal_surface->buffer_size__bytes = config->width * config->height * sizeof(color_t);
+    internal_surface->buffer_size__bytes = config->width * config->height * sizeof(rndl_color24_t);
     internal_surface->buffer = calloc(1, internal_surface->buffer_size__bytes);
     ESP_GOTO_ON_FALSE(internal_surface->buffer, ESP_ERR_NO_MEM, err, TAG, "no mem for surface buffer");
     *surface_handle = &internal_surface->base;

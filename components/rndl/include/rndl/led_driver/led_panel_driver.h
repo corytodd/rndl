@@ -14,8 +14,8 @@ extern "C" {
  * @brief Type of led panel driver configuration
  */
 typedef struct {
-    struct led_driver_config; /*!< Anonymous structure to inherit from led_driver_config_t */
-} led_panel_driver_config_t;
+    rndl_led_driver_config_t; /*!< Anonymous structure to inherit from led_driver_config_t */
+} rndl_led_panel_driver_config_t;
 
 /**
  * @brief Create LED panel driver
@@ -23,7 +23,7 @@ typedef struct {
  * @param[out] handle Returned LED driver handle
  * @return ESP_OK on success
  */
-esp_err_t led_panel_driver_new(const led_panel_driver_config_t *config, led_driver_handle_t *handle);
+esp_err_t rndl_led_panel_driver_new(const rndl_led_panel_driver_config_t *config, rndl_led_driver_handle_t *handle);
 
 #ifdef __cplusplus
 }

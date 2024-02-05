@@ -11,8 +11,8 @@
 static const char *TAG = "rndl_led_panel_driver";
 
 typedef struct {
-    led_driver_t base;
-    const led_panel_driver_config_t *config;
+    rndl_led_driver_t base;
+    const rndl_led_panel_driver_config_t *config;
     rmt_channel_handle_t led_chan;
     rmt_encoder_handle_t led_encoder;
     rmt_transmit_config_t tx_config;
@@ -21,8 +21,8 @@ typedef struct {
 /**
  * @brief Convert a point to a serpentine raster index
  */
-static int led_panel_driver_point_to_index(led_driver_t *driver, uint16_t x, uint16_t y, size_t y_max) {
-    UNUSED(driver);
+static int led_panel_driver_point_to_index(rndl_led_driver_t *driver, uint16_t x, uint16_t y, size_t y_max) {
+    RNDL_UNUSED(driver);
     int result;
     if (x % 2 == 0) {
         result = x * y_max + y;
@@ -32,7 +32,7 @@ static int led_panel_driver_point_to_index(led_driver_t *driver, uint16_t x, uin
     return (int)result;
 }
 
-static esp_err_t led_panel_driver_write_blocking(led_driver_t *driver, const void *data, size_t size__bytes) {
+static esp_err_t led_panel_driver_write_blocking(rndl_led_driver_t *driver, const void *data, size_t size__bytes) {
     esp_err_t ret = ESP_OK;
     led_panel_driver_t *panel_driver = NULL;
     ESP_GOTO_ON_FALSE(driver && data && size__bytes, ESP_ERR_INVALID_ARG, err, TAG, "invalid argument");
@@ -49,7 +49,8 @@ err:
     return ret;
 }
 
-esp_err_t led_panel_driver_new(const led_panel_driver_config_t *config, led_driver_handle_t *driver_handle) {
+esp_err_t rndl_led_panel_driver_new(const rndl_led_panel_driver_config_t *config,
+                                    rndl_led_driver_handle_t *driver_handle) {
     esp_err_t ret = ESP_OK;
     led_panel_driver_t *panel_driver = NULL;
     ESP_GOTO_ON_FALSE(config && driver_handle, ESP_ERR_INVALID_ARG, err, TAG, "invalid argument");
@@ -71,7 +72,7 @@ esp_err_t led_panel_driver_new(const led_panel_driver_config_t *config, led_driv
     ESP_ERROR_CHECK(rmt_new_tx_channel(&tx_chan_config, &panel_driver->led_chan));
 
     ESP_LOGD(TAG, "install led strip encoder");
-    led_encoder_config_t encoder_config = {
+    rndl_led_encoder_config_t encoder_config = {
         .resolution = config->resolution_hz,
     };
     ESP_ERROR_CHECK(rmt_new_led_encoder(&encoder_config, &panel_driver->led_encoder));
