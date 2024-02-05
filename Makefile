@@ -14,5 +14,6 @@ flash:
 
 clean:
 	idf.py clean
+	rm sdkconfig
 
 .PHONY: rndl debug-rndl clean

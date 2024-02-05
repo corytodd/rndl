@@ -15,6 +15,13 @@ make
 make flash
 ```
 
+## API Usage
+
+1. Create your driver and configuration in static memory
+2. Create your surface in static memory
+3. Draw using the surface primitives
+4. Render with `surface->render(surface)`
+
 ## Design
 
 The graphics engine is designed in layers. At each layer N, only the
