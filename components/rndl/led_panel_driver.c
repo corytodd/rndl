@@ -38,10 +38,12 @@ static esp_err_t led_panel_driver_write_blocking(rndl_led_driver_t *driver, cons
     ESP_GOTO_ON_FALSE(driver && data && size__bytes, ESP_ERR_INVALID_ARG, err, TAG, "invalid argument");
     panel_driver = __containerof(driver, led_panel_driver_t, base);
 
-    ESP_ERROR_CHECK(
-        rmt_transmit(panel_driver->led_chan, panel_driver->led_encoder, data, size__bytes, &panel_driver->tx_config));
+    ESP_GOTO_ON_ERROR(
+        rmt_transmit(panel_driver->led_chan, panel_driver->led_encoder, data, size__bytes, &panel_driver->tx_config),
+        err, TAG, "RMT transmit failed");
 
-    ESP_ERROR_CHECK(rmt_tx_wait_all_done(panel_driver->led_chan, panel_driver->config->timeout_ms));
+    ESP_GOTO_ON_ERROR(rmt_tx_wait_all_done(panel_driver->led_chan, panel_driver->config->timeout_ms), err, TAG,
+                      "RMT wait all done failed");
 
     panel_driver->config->fn_delay(panel_driver->config->frame_time_ms);
 
