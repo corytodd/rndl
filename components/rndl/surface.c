@@ -34,8 +34,10 @@ static esp_err_t surface_clear(rndl_surface_t *surface, const rndl_color24_t *co
         }
     }
     internal_surface->is_dirty = true;
+    goto out;
 
 err:
+out:
     return ret;
 }
 
@@ -77,8 +79,10 @@ static esp_err_t surface_draw_circle(rndl_surface_t *surface, const rndl_circle_
         }
     }
     internal_surface->is_dirty = true;
+    goto out;
 
 err:
+out:
     return ret;
 }
 
@@ -114,8 +118,10 @@ static esp_err_t surface_draw_line(rndl_surface_t *surface, const rndl_line_t *l
         }
     }
     internal_surface->is_dirty = true;
+    goto out;
 
 err:
+out:
     return ret;
 }
 
@@ -131,10 +137,12 @@ static esp_err_t surface_draw_pixel(rndl_surface_t *surface, const rndl_point_t 
     int rindex = internal_surface->led_driver->point_to_index(internal_surface->led_driver, point->x, point->y,
                                                               internal_surface->height);
 
-    ESP_ERROR_CHECK(rindex < 0 || rindex >= internal_surface->buffer_size__bytes ? ESP_ERR_INVALID_ARG : ESP_OK);
+    ESP_GOTO_ON_ERROR(rindex < 0 || rindex >= internal_surface->buffer_size__bytes ? ESP_ERR_INVALID_ARG : ESP_OK, err,
+                      TAG, "invalid index: %d", rindex);
 
-    memcpy(&internal_surface->buffer[rindex * sizeof(rndl_color24_t)], color, sizeof(rndl_color24_t));
+    memcpy(&internal_surface->buffer[rindex], color, sizeof(rndl_color24_t));
     internal_surface->is_dirty = true;
+    goto out;
 
 err:
 out:
@@ -185,13 +193,15 @@ static esp_err_t surface_draw_rect(rndl_surface_t *surface, const rndl_rect_t *r
         .end = rect->bottom_right,
     };
 
-    ESP_ERROR_CHECK(surface->draw_line(surface, &top, line_color, style));
-    ESP_ERROR_CHECK(surface->draw_line(surface, &bottom, line_color, style));
-    ESP_ERROR_CHECK(surface->draw_line(surface, &left, line_color, style));
-    ESP_ERROR_CHECK(surface->draw_line(surface, &right, line_color, style));
+    ESP_GOTO_ON_ERROR(surface->draw_line(surface, &top, line_color, style), err, TAG, "draw top line failed");
+    ESP_GOTO_ON_ERROR(surface->draw_line(surface, &bottom, line_color, style), err, TAG, "draw bottom line failed");
+    ESP_GOTO_ON_ERROR(surface->draw_line(surface, &left, line_color, style), err, TAG, "draw left line failed");
+    ESP_GOTO_ON_ERROR(surface->draw_line(surface, &right, line_color, style), err, TAG, "draw right line failed");
     internal_surface->is_dirty = true;
+    goto out;
 
 err:
+out:
     return ret;
 }
 
@@ -207,6 +217,7 @@ static esp_err_t surface_render(rndl_surface_t *surface) {
     ret = internal_surface->led_driver->write_blocking(internal_surface->led_driver, internal_surface->buffer,
                                                        internal_surface->buffer_size__bytes);
     internal_surface->is_dirty = false;
+    goto out;
 
 err:
 out:
@@ -239,6 +250,15 @@ esp_err_t rndl_surface_create(const rndl_surface_config_t *config, rndl_led_driv
 
     ESP_LOGD(TAG, "surface created: %d x %d (buffer %d bytes)", config->width, config->height,
              internal_surface->buffer_size__bytes);
+    goto out;
+
 err:
+    if (internal_surface) {
+        if (internal_surface->buffer) {
+            free(internal_surface->buffer);
+        }
+        free(internal_surface);
+    }
+out:
     return ret;
 }
