@@ -10,12 +10,10 @@ extern "C" {
 
 /**
  * @brief Point in 2D space
- * @details
- * Origin is at the top-left corner of the screen
  */
 typedef struct {
-    uint16_t x;
-    uint16_t y;
+    uint16_t x; /*!< X coordinate in pixels*/
+    uint16_t y; /*!< Y coordinate in pixels*/
 } rndl_point_t;
 
 #ifdef __cplusplus

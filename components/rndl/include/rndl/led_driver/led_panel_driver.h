@@ -21,7 +21,10 @@ typedef struct {
  * @brief Create LED panel driver
  * @param[in] config LED panel driver configuration
  * @param[out] handle Returned LED driver handle
- * @return ESP_OK on success
+ * @return
+ *      - ESP_ERR_INVALID_ARG for any invalid arguments
+ *      - ESP_ERR_NO_MEM out of memory when creating driver
+ *      - ESP_OK if creating driver successfully
  */
 esp_err_t rndl_led_panel_driver_new(const rndl_led_panel_driver_config_t *config, rndl_led_driver_handle_t *handle);
 

@@ -8,6 +8,9 @@
 extern "C" {
 #endif
 
+/**
+ * @brief Rectangle defined in 2D space
+ */
 typedef struct {
     rndl_point_t top_left;
     rndl_point_t bottom_right;

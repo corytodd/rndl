@@ -7,6 +7,9 @@
 extern "C" {
 #endif
 
+/**
+ * @brief Line in 2D space
+ */
 typedef struct {
     rndl_point_t start;
     rndl_point_t end;

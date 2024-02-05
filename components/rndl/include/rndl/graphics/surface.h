@@ -32,13 +32,17 @@ typedef struct {
     rndl_line_style_t line_style; /*!< Line style */
 } rndl_style_t;
 
+/**
+ * @brief Surface is a 2D canvas to draw on
+ */
 struct rndl_surface_t {
     /**
      * @brief Clear the surface with a color
      * @param surface Surface instance
      * @param color Fill entire surface with this color
-     * @return ESP_OK on success
-     * @return ESP_ERR_INVALID_ARG
+     * @return
+     *      - ESP_ERR_INVALID_ARG for any invalid arguments
+     *      - ESP_OK if color written to surface
      */
     esp_err_t (*clear)(rndl_surface_t *surface, const rndl_color24_t *color);
 
@@ -49,8 +53,9 @@ struct rndl_surface_t {
      * @param line_color Line color
      * @param style Style of circle, optional
      * @param fill_color Fill color, optional
-     * @return ESP_OK on success
-     * @return ESP_ERR_INVALID_ARG
+     * @return
+     *      - ESP_ERR_INVALID_ARG for any invalid arguments
+     *      - ESP_OK if circle written to surface
      */
     esp_err_t (*draw_circle)(rndl_surface_t *surface, const rndl_circle_t *circle, const rndl_color24_t *line_color,
                              const rndl_style_t *style, const rndl_color24_t *fill_color);
@@ -61,8 +66,9 @@ struct rndl_surface_t {
      * @param line Line to draw
      * @param line_color Line color
      * @param line_style Style of line, optional
-     * @return ESP_OK on success
-     * @return ESP_ERR_INVALID_ARG
+     * @return
+     *      - ESP_ERR_INVALID_ARG for any invalid arguments
+     *      - ESP_OK if line written to surface
      */
     esp_err_t (*draw_line)(rndl_surface_t *surface, const rndl_line_t *line, const rndl_color24_t *line_color,
                            const rndl_style_t *style);
@@ -72,8 +78,9 @@ struct rndl_surface_t {
      * @param surface Surface instance
      * @param point Point to draw
      * @param color Pixel color
-     * @return ESP_OK on success
-     * @return ESP_ERR_INVALID_ARG
+     * @return
+     *      - ESP_ERR_INVALID_ARG for any invalid arguments
+     *      - ESP_OK if pixel written to surface
      */
     esp_err_t (*draw_pixel)(rndl_surface_t *surface, const rndl_point_t *point, const rndl_color24_t *color);
 
@@ -84,8 +91,9 @@ struct rndl_surface_t {
      * @param line_color Outline color
      * @param rect_style Style of rectangle, optional
      * @param fill_color Fill color, optional
-     * @return ESP_OK on success
-     * @return ESP_ERR_INVALID_ARG
+     * @return
+     *      - ESP_ERR_INVALID_ARG for any invalid arguments
+     *      - ESP_OK if rectange written to surface
      */
     esp_err_t (*draw_rect)(rndl_surface_t *surface, const rndl_rect_t *rect, const rndl_color24_t *line_color,
                            const rndl_style_t *style, const rndl_color24_t *fill_color);
@@ -93,8 +101,9 @@ struct rndl_surface_t {
     /**
      * @brief Render the surface into the LED driver
      * @param surface Surface instance
-     * @return ESP_OK on success
-     * @return ESP_ERR_INVALID_ARG
+     * @return
+     *      - ESP_ERR_INVALID_ARG for any invalid arguments
+     *      - ESP_OK if render started successfully TODO: blocking vs. non-blocking render mode
      */
     esp_err_t (*render)(rndl_surface_t *surface);
 };
@@ -112,6 +121,10 @@ typedef struct {
  * @param[in] config Surface configuration
  * @param[in] led_driver LED driver handle
  * @param[out] handle Returned surface handle
+ * @return
+ *      - ESP_ERR_INVALID_ARG for any invalid arguments
+ *      - ESP_ERR_NO_MEM out of memory when creating surface
+ *      - ESP_OK if creating encoder successfully
  */
 esp_err_t rndl_surface_create(const rndl_surface_config_t *config, rndl_led_driver_handle_t led_driver,
                               rndl_surface_handle_t *handle);
