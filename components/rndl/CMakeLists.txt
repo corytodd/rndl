@@ -1,8 +1,8 @@
 list(APPEND SOURCES
-    rndl_color.c
-    rndl_led_encoder.c
-    rndl_led_panel_driver.c
-    rndl_surface.c
+    color.c
+    led_encoder.c
+    led_panel_driver.c
+    surface.c
 )
 
 list(APPEND INCLUDES
