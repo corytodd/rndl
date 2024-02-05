@@ -8,12 +8,17 @@
 
 static const char *TAG = "example";
 
+// Return a random number in the range [min, max]
+static inline uint16_t rnd_range(uint16_t min, uint16_t max) {
+    return ((uint16_t)esp_random() % (max - min + 1)) + min;
+}
+
 // Create a random, valid circle
 static void rnd_circle(const rndl_surface_config_t *surface_config, rndl_circle_t *circle) {
-    esp_fill_random(circle, sizeof(rndl_circle_t));
-    circle->center.x %= surface_config->width;
-    circle->center.y %= surface_config->height;
-    circle->radius %= RNDL_MAX(1, surface_config->width / 2);
+    circle->center.x = rnd_range(0, surface_config->width);
+    circle->center.y = rnd_range(0, surface_config->height);
+    uint16_t smaller_edge = RNDL_MIN(surface_config->width, surface_config->height);
+    circle->radius = rnd_range(1, smaller_edge / 2);
 }
 
 // If more than half the circle is off the surface, return true
@@ -32,11 +37,10 @@ RNDL_MAYBE_UNUSED void example_raindrops(rndl_surface_handle_t surface, const rn
 
     // Generate concentric circles
     const int ripple_count = 3;
-    rndl_circle_t circles[12] = {0};
+    rndl_circle_t circles[6] = {0};
     for (int i = 0; i < RNDL_COUNT_OF(circles); i += ripple_count) {
         rnd_circle(surface_config, &circles[i]);
         circles[i + 1].radius += 2;
-        circles[i + 2].radius += 4;
     }
 
     while (1) {
@@ -46,7 +50,7 @@ RNDL_MAYBE_UNUSED void example_raindrops(rndl_surface_handle_t surface, const rn
 
         for (int i = 0; i < RNDL_COUNT_OF(circles); ++i) {
             surface->draw_circle(surface, &circles[i], &color, NULL, NULL);
-            circles[i].radius = (circles[i].radius + 1) % CONFIG_RNDL_COLS;
+            circles[i].radius = (circles[i].radius + 1);
 
             // When a cirlce is more out of bounds than in bounds, generate a new one
             if (shape_off_surface(surface_config, &circles[i])) {
