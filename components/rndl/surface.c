@@ -146,6 +146,7 @@ static esp_err_t surface_draw_pixel(rndl_surface_t *surface, const rndl_point_t 
     }
     int rindex = internal_surface->led_driver->point_to_index(internal_surface->led_driver, point->x, point->y,
                                                               internal_surface->height);
+    rindex = rindex * sizeof(rndl_color24_t);
 
     ESP_GOTO_ON_ERROR(rindex < 0 || rindex >= internal_surface->buffer_size__bytes ? ESP_ERR_INVALID_ARG : ESP_OK, err,
                       TAG, "invalid index: %d", rindex);
