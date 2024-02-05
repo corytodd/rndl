@@ -1,6 +1,10 @@
 set(SOURCES
-    "main.c"
-    "platform.c"
+    main.c
+    platform.c
+    examples/example_extent.c
+    examples/example_lines.c
+    examples/example_raindrops.c
+    examples/example_rectangle.c
 )
 
 idf_component_register(SRCS ${SOURCES}
