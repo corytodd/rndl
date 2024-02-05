@@ -42,12 +42,44 @@ err:
 static esp_err_t surface_draw_circle(rndl_surface_t *surface, const rndl_circle_t *circle,
                                      const rndl_color24_t *line_color, const rndl_style_t *style,
                                      const rndl_color24_t *fill_color) {
-    RNDL_UNUSED(surface);
-    RNDL_UNUSED(circle);
-    RNDL_UNUSED(line_color);
     RNDL_UNUSED(style);
     RNDL_UNUSED(fill_color);
-    return ESP_ERR_NOT_SUPPORTED;
+    esp_err_t ret = ESP_OK;
+    ESP_GOTO_ON_FALSE(surface && circle && line_color, ESP_ERR_INVALID_ARG, err, TAG, "invalid argument");
+    internal_surface_t *internal_surface = __containerof(surface, internal_surface_t, base);
+
+    // Jesko's Method
+    // https://en.wikipedia.org/wiki/Midpoint_circle_algorithm#Jesko's_Method
+    int x = circle->radius;
+    int y = 0;
+    int r_err = 1 - x;
+
+    while (x >= y) {
+        const rndl_point_t points[] = {
+            {.x = circle->center.x + x, .y = circle->center.y + y},
+            {.x = circle->center.x + y, .y = circle->center.y + x},
+            {.x = circle->center.x - y, .y = circle->center.y + x},
+            {.x = circle->center.x - x, .y = circle->center.y + y},
+            {.x = circle->center.x - x, .y = circle->center.y - y},
+            {.x = circle->center.x - y, .y = circle->center.y - x},
+            {.x = circle->center.x + y, .y = circle->center.y - x},
+            {.x = circle->center.x + x, .y = circle->center.y - y},
+        };
+        for (int i = 0; i < sizeof(points) / sizeof(rndl_point_t); ++i) {
+            surface->draw_pixel(surface, &points[i], line_color);
+        }
+        y++;
+        if (r_err < 0) {
+            r_err += 2 * y + 1;
+        } else {
+            x--;
+            r_err += 2 * (y - x + 1);
+        }
+    }
+    internal_surface->is_dirty = true;
+
+err:
+    return ret;
 }
 
 static esp_err_t surface_draw_line(rndl_surface_t *surface, const rndl_line_t *line, const rndl_color24_t *line_color,
