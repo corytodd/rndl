@@ -59,9 +59,6 @@ esp_err_t rndl_led_panel_driver_new(const rndl_led_panel_driver_config_t *config
     panel_driver = calloc(1, sizeof(led_panel_driver_t));
     ESP_GOTO_ON_FALSE(panel_driver, ESP_ERR_NO_MEM, err, TAG, "no mem for led panel driver");
 
-    panel_driver->base.write_blocking = led_panel_driver_write_blocking;
-    panel_driver->base.point_to_index = led_panel_driver_point_to_index;
-    ESP_LOGD(TAG, "create RMT TX channel");
     rmt_tx_channel_config_t tx_chan_config = {
         .clk_src = RMT_CLK_SRC_DEFAULT,
         .gpio_num = config->gpio_num,
@@ -69,21 +66,35 @@ esp_err_t rndl_led_panel_driver_new(const rndl_led_panel_driver_config_t *config
         .resolution_hz = config->resolution_hz,
         .trans_queue_depth = 4, // set the number of transactions that can be pending in the background
     };
-    ESP_ERROR_CHECK(rmt_new_tx_channel(&tx_chan_config, &panel_driver->led_chan));
+    ESP_GOTO_ON_ERROR(rmt_new_tx_channel(&tx_chan_config, &panel_driver->led_chan), err, TAG,
+                      "create RMT TX channel failed");
 
-    ESP_LOGD(TAG, "install led strip encoder");
     rndl_led_encoder_config_t encoder_config = {
         .resolution = config->resolution_hz,
     };
-    ESP_ERROR_CHECK(rmt_new_led_encoder(&encoder_config, &panel_driver->led_encoder));
+    ESP_GOTO_ON_ERROR(rmt_new_led_encoder(&encoder_config, &panel_driver->led_encoder), err, TAG,
+                      "install led strip encoder failed");
+    ESP_GOTO_ON_ERROR(rmt_enable(panel_driver->led_chan), err, TAG, "enable RMT TX channel failed");
 
-    ESP_LOGD(TAG, "enable RMT TX channel");
-    ESP_ERROR_CHECK(rmt_enable(panel_driver->led_chan));
-
+    panel_driver->base.write_blocking = led_panel_driver_write_blocking;
+    panel_driver->base.point_to_index = led_panel_driver_point_to_index;
     panel_driver->tx_config.loop_count = 0; // no transfer loop
     panel_driver->config = config;
 
     *driver_handle = &panel_driver->base;
+    goto out;
+
 err:
+    if (panel_driver) {
+        if (panel_driver->led_encoder) {
+            rmt_del_encoder(panel_driver->led_encoder);
+        }
+        if (panel_driver->led_chan) {
+            rmt_disable(panel_driver->led_chan);
+            rmt_del_channel(panel_driver->led_chan);
+        }
+        free(panel_driver);
+    }
+out:
     return ret;
 }
