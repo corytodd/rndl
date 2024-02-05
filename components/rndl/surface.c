@@ -26,6 +26,8 @@ static esp_err_t surface_clear(rndl_surface_t *surface, const rndl_color24_t *co
     ESP_GOTO_ON_FALSE(surface && color, ESP_ERR_INVALID_ARG, err, TAG, "invalid argument");
     internal_surface_t *internal_surface = __containerof(surface, internal_surface_t, base);
 
+    // TODO: is this optimization actually doing anything? Maybe we should aways loop through the buffer
+    // and let the compiler decide if it's worth optimizing.
     if (color->red == 0 && color->green == 0 && color->blue == 0) {
         memset(internal_surface->buffer, 0, internal_surface->buffer_size__bytes);
     } else {
@@ -78,6 +80,10 @@ static esp_err_t surface_draw_circle(rndl_surface_t *surface, const rndl_circle_
             r_err += 2 * (y - x + 1);
         }
     }
+
+    // TODO: handle color fill
+    // TODO: handle line_style
+
     internal_surface->is_dirty = true;
     goto out;
 
@@ -93,6 +99,7 @@ static esp_err_t surface_draw_line(rndl_surface_t *surface, const rndl_line_t *l
     ESP_GOTO_ON_FALSE(surface && line && line_color, ESP_ERR_INVALID_ARG, err, TAG, "invalid argument");
     internal_surface_t *internal_surface = __containerof(surface, internal_surface_t, base);
 
+    // Integer Bresenham's line algorithm
     rndl_point_t p1 = line->start;
     rndl_point_t p2 = line->end;
     int dx = abs(p2.x - p1.x);
@@ -117,6 +124,9 @@ static esp_err_t surface_draw_line(rndl_surface_t *surface, const rndl_line_t *l
             p1.y += sy;
         }
     }
+
+    // TODO: handle style
+
     internal_surface->is_dirty = true;
     goto out;
 
@@ -197,6 +207,10 @@ static esp_err_t surface_draw_rect(rndl_surface_t *surface, const rndl_rect_t *r
     ESP_GOTO_ON_ERROR(surface->draw_line(surface, &bottom, line_color, style), err, TAG, "draw bottom line failed");
     ESP_GOTO_ON_ERROR(surface->draw_line(surface, &left, line_color, style), err, TAG, "draw left line failed");
     ESP_GOTO_ON_ERROR(surface->draw_line(surface, &right, line_color, style), err, TAG, "draw right line failed");
+
+    // TODO: handle color fill
+    // TODO: handle line_style
+
     internal_surface->is_dirty = true;
     goto out;
 
@@ -214,6 +228,8 @@ static esp_err_t surface_render(rndl_surface_t *surface) {
         ESP_LOGD(TAG, "surface is not dirty, skip rendering");
         goto out;
     }
+
+    // TODO: implement non-blocking write
     ret = internal_surface->led_driver->write_blocking(internal_surface->led_driver, internal_surface->buffer,
                                                        internal_surface->buffer_size__bytes);
     internal_surface->is_dirty = false;
