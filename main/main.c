@@ -83,7 +83,7 @@ void app_main(void) {
 
     ESP_LOGI(TAG, "startup complete");
 
-    example_raindrops(surface, &surface_config);
+    example_bitmap(surface, &surface_config);
 
     ESP_LOGI(TAG, "pattern complete");
 

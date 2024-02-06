@@ -1,6 +1,8 @@
 set(SOURCES
     main.c
     platform.c
+    example/example_bitmap.c
+    example/example_bitmap_data.c
     example/example_extent.c
     example/example_lines.c
     example/example_raindrops.c

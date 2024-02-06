@@ -1,6 +1,7 @@
 #pragma once
 
 #include "rndl/color.h"
+#include "rndl/graphics/bitmap.h"
 #include "rndl/graphics/circle.h"
 #include "rndl/graphics/line.h"
 #include "rndl/graphics/point.h"
@@ -36,6 +37,18 @@ typedef struct {
  * @brief Surface is a 2D canvas to draw on
  */
 struct rndl_surface_t {
+
+    /**
+     * @brief Draw a bitmap
+     * @param surface Surface instance
+     * @param bitmap Bitmap to draw
+     * @param position Position to draw the bitmap
+     * @return
+     *     - ESP_ERR_INVALID_ARG for any invalid arguments
+     *    - ESP_OK if bitmap written to surface
+     */
+    esp_err_t (*draw_bitmap)(rndl_surface_t *surface, const rndl_bitmap24_t *bitmap, const rndl_point_t *position);
+
     /**
      * @brief Clear the surface with a color
      * @param surface Surface instance

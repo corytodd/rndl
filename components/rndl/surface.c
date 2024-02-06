@@ -27,6 +27,30 @@ typedef struct {
 #define LOCK_SURFACE(surface)   xSemaphoreTakeRecursive(surface->surface_lock, portMAX_DELAY)
 #define UNLOCK_SURFACE(surface) xSemaphoreGiveRecursive(surface->surface_lock)
 
+static esp_err_t surface_draw_bitmap(rndl_surface_t *surface, const rndl_bitmap24_t *bitmap,
+                                     const rndl_point_t *position) {
+    esp_err_t ret = ESP_OK;
+    ESP_GOTO_ON_FALSE(surface && bitmap && position, ESP_ERR_INVALID_ARG, err, TAG, "invalid argument");
+    internal_surface_t *internal_surface = __containerof(surface, internal_surface_t, base);
+
+    LOCK_SURFACE(internal_surface);
+    const rndl_point_t p = *position;
+    for (int y = 0; y < bitmap->height; ++y) {
+        for (int x = 0; x < bitmap->width; ++x) {
+            const rndl_color24_t *color = &bitmap->pixels[y * bitmap->width + x];
+            const rndl_point_t point = {.x = p.x + x, .y = p.y + y};
+            surface->draw_pixel(surface, &point, color);
+        }
+    }
+    internal_surface->is_dirty = true;
+    goto out;
+
+out:
+    UNLOCK_SURFACE(internal_surface);
+err:
+    return ret;
+}
+
 static esp_err_t surface_clear(rndl_surface_t *surface, const rndl_color24_t *color) {
     esp_err_t ret = ESP_OK;
     ESP_GOTO_ON_FALSE(surface && color, ESP_ERR_INVALID_ARG, err, TAG, "invalid argument");
@@ -270,6 +294,7 @@ esp_err_t rndl_surface_create(const rndl_surface_config_t *config, rndl_led_driv
     internal_surface->surface_lock = xSemaphoreCreateMutex();
     ESP_GOTO_ON_FALSE(internal_surface->surface_lock, ESP_ERR_NO_MEM, err, TAG, "no mem for surface lock");
 
+    internal_surface->base.draw_bitmap = surface_draw_bitmap;
     internal_surface->base.clear = surface_clear;
     internal_surface->base.draw_circle = surface_draw_circle;
     internal_surface->base.draw_line = surface_draw_line;
