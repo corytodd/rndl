@@ -4,6 +4,8 @@
 #include <esp_check.h>
 #include <esp_err.h>
 #include <esp_log.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
 #include <math.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -19,13 +21,18 @@ typedef struct {
     uint16_t height;
     size_t buffer_size__bytes;
     uint8_t *buffer;
+    SemaphoreHandle_t surface_lock;
 } internal_surface_t;
+
+#define LOCK_SURFACE(surface)   xSemaphoreTakeRecursive(surface->surface_lock, portMAX_DELAY)
+#define UNLOCK_SURFACE(surface) xSemaphoreGiveRecursive(surface->surface_lock)
 
 static esp_err_t surface_clear(rndl_surface_t *surface, const rndl_color24_t *color) {
     esp_err_t ret = ESP_OK;
     ESP_GOTO_ON_FALSE(surface && color, ESP_ERR_INVALID_ARG, err, TAG, "invalid argument");
     internal_surface_t *internal_surface = __containerof(surface, internal_surface_t, base);
 
+    LOCK_SURFACE(internal_surface);
     // TODO: is this optimization actually doing anything? Maybe we should aways loop through the buffer
     // and let the compiler decide if it's worth optimizing.
     if (color->red == 0 && color->green == 0 && color->blue == 0) {
@@ -38,8 +45,9 @@ static esp_err_t surface_clear(rndl_surface_t *surface, const rndl_color24_t *co
     internal_surface->is_dirty = true;
     goto out;
 
-err:
 out:
+    UNLOCK_SURFACE(internal_surface);
+err:
     return ret;
 }
 
@@ -58,6 +66,7 @@ static esp_err_t surface_draw_circle(rndl_surface_t *surface, const rndl_circle_
     int y = 0;
     int r_err = 1 - x;
 
+    LOCK_SURFACE(internal_surface);
     while (x >= y) {
         const rndl_point_t points[] = {
             {.x = circle->center.x + x, .y = circle->center.y + y},
@@ -87,8 +96,9 @@ static esp_err_t surface_draw_circle(rndl_surface_t *surface, const rndl_circle_
     internal_surface->is_dirty = true;
     goto out;
 
-err:
 out:
+    UNLOCK_SURFACE(internal_surface);
+err:
     return ret;
 }
 
@@ -108,6 +118,7 @@ static esp_err_t surface_draw_line(rndl_surface_t *surface, const rndl_line_t *l
     int sy = p1.y < p2.y ? 1 : -1;
     int err = dx - dy;
 
+    LOCK_SURFACE(internal_surface);
     while (true) {
         const rndl_point_t point = {.x = p1.x, .y = p1.y};
         surface->draw_pixel(surface, &point, line_color);
@@ -130,8 +141,9 @@ static esp_err_t surface_draw_line(rndl_surface_t *surface, const rndl_line_t *l
     internal_surface->is_dirty = true;
     goto out;
 
-err:
 out:
+    UNLOCK_SURFACE(internal_surface);
+err:
     return ret;
 }
 
@@ -151,12 +163,14 @@ static esp_err_t surface_draw_pixel(rndl_surface_t *surface, const rndl_point_t 
     ESP_GOTO_ON_ERROR(rindex < 0 || rindex >= internal_surface->buffer_size__bytes ? ESP_ERR_INVALID_ARG : ESP_OK, err,
                       TAG, "invalid index: %d", rindex);
 
+    LOCK_SURFACE(internal_surface);
     memcpy(&internal_surface->buffer[rindex], color, sizeof(rndl_color24_t));
     internal_surface->is_dirty = true;
     goto out;
 
-err:
 out:
+    UNLOCK_SURFACE(internal_surface);
+err:
     return ret;
 }
 
@@ -204,10 +218,11 @@ static esp_err_t surface_draw_rect(rndl_surface_t *surface, const rndl_rect_t *r
         .end = rect->bottom_right,
     };
 
-    ESP_GOTO_ON_ERROR(surface->draw_line(surface, &top, line_color, style), err, TAG, "draw top line failed");
-    ESP_GOTO_ON_ERROR(surface->draw_line(surface, &bottom, line_color, style), err, TAG, "draw bottom line failed");
-    ESP_GOTO_ON_ERROR(surface->draw_line(surface, &left, line_color, style), err, TAG, "draw left line failed");
-    ESP_GOTO_ON_ERROR(surface->draw_line(surface, &right, line_color, style), err, TAG, "draw right line failed");
+    LOCK_SURFACE(internal_surface);
+    ESP_GOTO_ON_ERROR(surface->draw_line(surface, &top, line_color, style), out, TAG, "draw top line failed");
+    ESP_GOTO_ON_ERROR(surface->draw_line(surface, &bottom, line_color, style), out, TAG, "draw bottom line failed");
+    ESP_GOTO_ON_ERROR(surface->draw_line(surface, &left, line_color, style), out, TAG, "draw left line failed");
+    ESP_GOTO_ON_ERROR(surface->draw_line(surface, &right, line_color, style), out, TAG, "draw right line failed");
 
     // TODO: handle color fill
     // TODO: handle line_style
@@ -215,8 +230,9 @@ static esp_err_t surface_draw_rect(rndl_surface_t *surface, const rndl_rect_t *r
     internal_surface->is_dirty = true;
     goto out;
 
-err:
 out:
+    UNLOCK_SURFACE(internal_surface);
+err:
     return ret;
 }
 
@@ -225,6 +241,7 @@ static esp_err_t surface_render(rndl_surface_t *surface) {
     ESP_GOTO_ON_FALSE(surface, ESP_ERR_INVALID_ARG, err, TAG, "invalid argument: surface is NULL");
     internal_surface_t *internal_surface = __containerof(surface, internal_surface_t, base);
 
+    LOCK_SURFACE(internal_surface);
     if (!internal_surface->is_dirty) {
         ESP_LOGD(TAG, "surface is not dirty, skip rendering");
         goto out;
@@ -236,8 +253,9 @@ static esp_err_t surface_render(rndl_surface_t *surface) {
     internal_surface->is_dirty = false;
     goto out;
 
-err:
 out:
+    UNLOCK_SURFACE(internal_surface);
+err:
     return ret;
 }
 
@@ -249,6 +267,9 @@ esp_err_t rndl_surface_create(const rndl_surface_config_t *config, rndl_led_driv
 
     internal_surface = calloc(1, sizeof(internal_surface_t));
     ESP_GOTO_ON_FALSE(internal_surface, ESP_ERR_NO_MEM, err, TAG, "no mem for surface");
+
+    internal_surface->surface_lock = xSemaphoreCreateMutex();
+    ESP_GOTO_ON_FALSE(internal_surface->surface_lock, ESP_ERR_NO_MEM, err, TAG, "no mem for surface lock");
 
     internal_surface->base.clear = surface_clear;
     internal_surface->base.draw_circle = surface_draw_circle;
