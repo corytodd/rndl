@@ -1,3 +1,5 @@
+#include "sdkconfig.h"
+
 #include <esp_log.h>
 #include <rndl/color.h>
 #include <rndl/graphics/line.h>

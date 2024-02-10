@@ -1,3 +1,5 @@
+#include "example/example.h"
+
 #include <esp_err.h>
 #include <esp_log.h>
 #include <freertos/FreeRTOS.h>
@@ -12,27 +14,6 @@
 static const char *TAG = "app";
 
 extern void platform_delay_ms(uint32_t delay_ms);
-
-/**
- * Turn on the pixels of each corner of a surface to test the extent. The pixels will be turned on
- * in order: top-left, top-right, bottom-right, bottom-left, and repeat.
- */
-extern void example_extent(rndl_surface_handle_t surface, const rndl_surface_config_t *surface_config);
-
-/**
- * Draw angled lines on the surface
- */
-extern void example_lines(rndl_surface_handle_t surface, const rndl_surface_config_t *surface_config);
-
-/**
- * Draw random, concentric circles on the surface
- */
-extern void example_raindrops(rndl_surface_handle_t surface, const rndl_surface_config_t *surface_config);
-
-/**
- * Loop a shrinking rectangle forever
- */
-extern void example_rectangle(rndl_surface_handle_t surface, const rndl_surface_config_t *surface_config);
 
 static rndl_led_driver_handle_t led_driver = NULL;
 static const rndl_led_panel_driver_config_t config = {

@@ -1,3 +1,5 @@
+#include "sdkconfig.h"
+
 #include <esp_log.h>
 #include <esp_random.h>
 #include <rndl/color.h>
