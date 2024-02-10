@@ -10,12 +10,12 @@ extern "C" {
 #endif
 
 /**
- * @brief Color in 24-bits, GBR format
+ * @brief Color in 24-bits, GRB format
  */
 typedef struct {
     uint8_t green;
-    uint8_t blue;
     uint8_t red;
+    uint8_t blue;
 } RNDL_PACKED rndl_color24_t;
 
 /**
