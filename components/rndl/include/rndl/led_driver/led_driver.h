@@ -37,10 +37,9 @@ struct rndl_led_driver_t {
      * @param driver LED driver instance
      * @param data Data to write
      * @param size__bytes Size of data to write
-     * @param timeout__ms Timeout in milliseconds
      * @return ESP_OK on success
      */
-    esp_err_t (*write_blocking)(rndl_led_driver_t *driver, const void *data, size_t size__bytes);
+    esp_err_t (*write)(rndl_led_driver_t *driver, const void *data, size_t size__bytes);
 };
 
 typedef struct led_driver_config {

@@ -247,9 +247,8 @@ static esp_err_t surface_render(rndl_surface_t *surface) {
         goto out;
     }
 
-    // TODO: implement non-blocking write
-    ret = internal_surface->led_driver->write_blocking(internal_surface->led_driver, internal_surface->buffer,
-                                                       internal_surface->buffer_size__bytes);
+    ret = internal_surface->led_driver->write(internal_surface->led_driver, internal_surface->buffer,
+                                              internal_surface->buffer_size__bytes);
     internal_surface->is_dirty = false;
     goto out;
 

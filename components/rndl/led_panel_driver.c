@@ -32,7 +32,7 @@ static int led_panel_driver_point_to_index(rndl_led_driver_t *driver, uint16_t x
     return (int)result;
 }
 
-static esp_err_t led_panel_driver_write_blocking(rndl_led_driver_t *driver, const void *data, size_t size__bytes) {
+static esp_err_t led_panel_driver_write(rndl_led_driver_t *driver, const void *data, size_t size__bytes) {
     esp_err_t ret = ESP_OK;
     led_panel_driver_t *panel_driver = NULL;
     ESP_GOTO_ON_FALSE(driver && data && size__bytes, ESP_ERR_INVALID_ARG, err, TAG, "invalid argument");
@@ -42,11 +42,12 @@ static esp_err_t led_panel_driver_write_blocking(rndl_led_driver_t *driver, cons
         rmt_transmit(panel_driver->led_chan, panel_driver->led_encoder, data, size__bytes, &panel_driver->tx_config),
         err, TAG, "RMT transmit failed");
 
-    ESP_GOTO_ON_ERROR(rmt_tx_wait_all_done(panel_driver->led_chan, panel_driver->config->timeout_ms), err, TAG,
-                      "RMT wait all done failed");
+    if (panel_driver->config->timeout_ms != 0) {
+        ESP_GOTO_ON_ERROR(rmt_tx_wait_all_done(panel_driver->led_chan, panel_driver->config->timeout_ms), err, TAG,
+                          "RMT wait done failed");
 
-    panel_driver->config->fn_delay(panel_driver->config->frame_time_ms);
-
+        panel_driver->config->fn_delay(panel_driver->config->frame_time_ms);
+    }
 err:
     return ret;
 }
@@ -78,7 +79,7 @@ esp_err_t rndl_led_panel_driver_new(const rndl_led_panel_driver_config_t *config
                       "install led strip encoder failed");
     ESP_GOTO_ON_ERROR(rmt_enable(panel_driver->led_chan), err, TAG, "enable RMT TX channel failed");
 
-    panel_driver->base.write_blocking = led_panel_driver_write_blocking;
+    panel_driver->base.write = led_panel_driver_write;
     panel_driver->base.point_to_index = led_panel_driver_point_to_index;
     panel_driver->tx_config.loop_count = 0; // no transfer loop
     panel_driver->config = config;
