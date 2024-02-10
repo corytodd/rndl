@@ -43,12 +43,10 @@ struct rndl_led_driver_t {
 };
 
 typedef struct led_driver_config {
-    uint16_t gpio_num;               /*!< GPIO number */
-    uint32_t led_count;              /*!< Number of LEDs */
-    uint32_t resolution_hz;          /*!< Resolution in Hz */
-    uint32_t frame_time_ms;          /*!< Time in milliseconds to hold each frame */
-    rndl_platform_delay_ms fn_delay; /*!< Delay function */
-    int timeout_ms;                  /*!< Timeout in milliseconds for blocking operations*/
+    uint16_t gpio_num;      /*!< GPIO number */
+    uint32_t led_count;     /*!< Number of LEDs */
+    uint32_t resolution_hz; /*!< Resolution in Hz */
+    int timeout_ms;         /*!< Timeout in milliseconds for blocking operations*/
 } rndl_led_driver_config_t;
 
 #ifdef __cplusplus

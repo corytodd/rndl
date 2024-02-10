@@ -24,4 +24,12 @@ config RNDL_COLS
 config RNDL_FPS
     int "Render frames per second"
     default 100
+
+config RNDL_RENDER_STACK_SIZE_BYTES
+    int "Render stack size in bytes"
+    default 1024
+
+config RNDL_RENDER_PRIORITY
+    int "Render task priority (higher is higher priority)"
+    default 5
 endmenu

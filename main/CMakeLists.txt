@@ -7,9 +7,13 @@ set(SOURCES
     example/example_rectangle.c
 )
 
+set(REQ
+    esp_timer
+    rndl)
+
 idf_component_register(SRCS ${SOURCES}
                        INCLUDE_DIRS "."
-                       PRIV_REQUIRES rndl)
+                       PRIV_REQUIRES ${REQ})
 
 # Enable anonymous structs
 target_compile_options(${COMPONENT_LIB} PRIVATE -fms-extensions)

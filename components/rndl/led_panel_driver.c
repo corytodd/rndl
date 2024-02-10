@@ -45,8 +45,6 @@ static esp_err_t led_panel_driver_write(rndl_led_driver_t *driver, const void *d
     if (panel_driver->config->timeout_ms != 0) {
         ESP_GOTO_ON_ERROR(rmt_tx_wait_all_done(panel_driver->led_chan, panel_driver->config->timeout_ms), err, TAG,
                           "RMT wait done failed");
-
-        panel_driver->config->fn_delay(panel_driver->config->frame_time_ms);
     }
 err:
     return ret;
@@ -57,7 +55,6 @@ esp_err_t rndl_led_panel_driver_new(const rndl_led_panel_driver_config_t *config
     esp_err_t ret = ESP_OK;
     led_panel_driver_t *panel_driver = NULL;
     ESP_GOTO_ON_FALSE(config && driver_handle, ESP_ERR_INVALID_ARG, err, TAG, "invalid argument");
-    ESP_GOTO_ON_FALSE(config->fn_delay, ESP_ERR_INVALID_ARG, err, TAG, "fn_delay is not set");
 
     panel_driver = calloc(1, sizeof(led_panel_driver_t));
     ESP_GOTO_ON_FALSE(panel_driver, ESP_ERR_NO_MEM, err, TAG, "no mem for led panel driver");
