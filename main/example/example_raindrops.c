@@ -57,7 +57,7 @@ RNDL_MAYBE_UNUSED void example_raindrops(rndl_surface_handle_t surface, const rn
             // When a cirlce is more out of bounds than in bounds, generate a new one
             if (shape_off_surface(surface_config, &circles[i])) {
                 rnd_circle(surface_config, &circles[i]);
-                ESP_LOGI(TAG, "circle %d off surface", i);
+                ESP_LOGD(TAG, "circle %d off surface", i);
             }
         }
         surface->render(surface);
