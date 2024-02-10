@@ -59,12 +59,18 @@ esp_err_t rndl_led_panel_driver_new(const rndl_led_panel_driver_config_t *config
     panel_driver = calloc(1, sizeof(led_panel_driver_t));
     ESP_GOTO_ON_FALSE(panel_driver, ESP_ERR_NO_MEM, err, TAG, "no mem for led panel driver");
 
+    // RMT docs say channels can borrow extra space from adjacent channels
+    // Since we only need 1 channel, take them all.
+    const int channel_count = 8;
+    const int channel_size = 64;
+    const int trans_queue_depth = 4;
+
     rmt_tx_channel_config_t tx_chan_config = {
         .clk_src = RMT_CLK_SRC_DEFAULT,
         .gpio_num = config->gpio_num,
-        .mem_block_symbols = 64, // increase the block size can make the LED less flickering
+        .mem_block_symbols = channel_size * channel_count,
         .resolution_hz = config->resolution_hz,
-        .trans_queue_depth = 4, // set the number of transactions that can be pending in the background
+        .trans_queue_depth = trans_queue_depth,
     };
     ESP_GOTO_ON_ERROR(rmt_new_tx_channel(&tx_chan_config, &panel_driver->led_chan), err, TAG,
                       "create RMT TX channel failed");
