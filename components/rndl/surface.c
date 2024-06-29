@@ -1,4 +1,5 @@
 #include "rndl/graphics/surface.h"
+
 #include "rndl/led_driver/led_driver.h"
 
 #include <esp_check.h>
@@ -316,11 +317,10 @@ esp_err_t rndl_surface_create(const rndl_surface_config_t *config, rndl_led_driv
 
 err:
     if (internal_surface) {
-        if (internal_surface->buffer) {
-            free(internal_surface->buffer);
-        }
-        free(internal_surface);
+        free(internal_surface->buffer);
     }
+    free(internal_surface);
+
 out:
     return ret;
 }
