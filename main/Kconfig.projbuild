@@ -19,7 +19,7 @@ config RNDL_ROWS
 
 config RNDL_COLS
     int "Number of LED panel columns"
-    default 32
+    default 16
 
 config RNDL_FPS
     int "Render frames per second"
@@ -32,4 +32,96 @@ config RNDL_RENDER_STACK_SIZE_BYTES
 config RNDL_RENDER_PRIORITY
     int "Render task priority (higher is higher priority)"
     default 5
+
+config RNDL_MQTT_BROKER_URL
+    string "MQTT broker URL"
+    default ""
+    help 
+        Leave empty to disable MQTT
+
+config RNDL_MQTT_TOPIC
+    string "MQTT topic"
+    default "rndl"
+    help 
+        MQTT topic to subscribe to
+
+config RNDL_MQTT_USERNAME
+    string "MQTT username"
+    default ""
+    help 
+        Leave empty for no username
+
+config RNDL_MQTT_PASSWORD
+    string "MQTT password"
+    default ""
+    help 
+        Leave empty for no password
+endmenu
+
+menu "Wifi Configuration"
+
+    config RNDL_WIFI_SSID
+        string "WiFi SSID"
+        default "myssid"
+        help
+            SSID (network name) for the example to connect to.
+
+    config RNDL_WIFI_PASSWORD
+        string "WiFi Password"
+        default "mypassword"
+        help
+            WiFi password (WPA or WPA2) for the example to use.
+
+    choice RNDL_WIFI_SAE_MODE
+        prompt "WPA3 SAE mode selection"
+        default RNDL_WPA3_SAE_PWE_BOTH
+        help
+            Select mode for SAE as Hunt and Peck, H2E or both.
+        config RNDL_WPA3_SAE_PWE_HUNT_AND_PECK
+            bool "HUNT AND PECK"
+        config RNDL_WPA3_SAE_PWE_HASH_TO_ELEMENT
+            bool "H2E"
+        config RNDL_WPA3_SAE_PWE_BOTH
+            bool "BOTH"
+    endchoice
+
+    config RNDL_WIFI_PW_ID
+        string "PASSWORD IDENTIFIER"
+        depends on  RNDL_WPA3_SAE_PWE_HASH_TO_ELEMENT|| RNDL_WPA3_SAE_PWE_BOTH
+        default ""
+        help
+            password identifier for SAE H2E
+
+    config RNDL_MAXIMUM_RETRY
+        int "Maximum retry"
+        default 5
+        help
+            Set the Maximum retry to avoid station reconnecting to the AP unlimited when the AP is really inexistent.
+
+    choice RNDL_WIFI_SCAN_AUTH_MODE_THRESHOLD
+        prompt "WiFi Scan auth mode threshold"
+        default RNDL_WIFI_AUTH_WPA2_PSK
+        help
+            The weakest authmode to accept in the scan mode.
+            This value defaults to RNDL_WIFI_AUTH_WPA2_PSK incase password is present and RNDL_WIFI_AUTH_OPEN is used.
+            Please select RNDL_WIFI_AUTH_WEP/RNDL_WIFI_AUTH_WPA_PSK incase AP is operating in WEP/WPA mode.
+
+        config RNDL_WIFI_AUTH_OPEN
+            bool "OPEN"
+        config RNDL_WIFI_AUTH_WEP
+            bool "WEP"
+        config RNDL_WIFI_AUTH_WPA_PSK
+            bool "WPA PSK"
+        config RNDL_WIFI_AUTH_WPA2_PSK
+            bool "WPA2 PSK"
+        config RNDL_WIFI_AUTH_WPA_WPA2_PSK
+            bool "WPA/WPA2 PSK"
+        config RNDL_WIFI_AUTH_WPA3_PSK
+            bool "WPA3 PSK"
+        config RNDL_WIFI_AUTH_WPA2_WPA3_PSK
+            bool "WPA2/WPA3 PSK"
+        config RNDL_WIFI_AUTH_WAPI_PSK
+            bool "WAPI PSK"
+    endchoice
+
 endmenu
