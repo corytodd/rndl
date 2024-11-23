@@ -25,7 +25,7 @@ IndentWidth: 4
 TabWidth: 4
 UseTab: "Never"
 AccessModifierOffset: -4
-NamespaceIndentation: All
+NamespaceIndentation: None
 DerivePointerAlignment: false
 PointerAlignment: Right
 QualifierAlignment: Left
