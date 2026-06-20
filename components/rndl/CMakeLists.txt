@@ -10,7 +10,7 @@ list(APPEND INCLUDES
 )
 
 list(APPEND REQ
-    driver
+    esp_driver_rmt
     esp_common
 )
 
