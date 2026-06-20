@@ -1,5 +1,3 @@
-#include "example/example.h"
-
 #include <esp_err.h>
 #include <esp_log.h>
 #include <esp_timer.h>
@@ -9,6 +7,7 @@
 #include <rndl/led_driver/led_driver.h>
 #include <rndl/led_driver/led_panel_driver.h>
 #include <rndl/utils.h>
+#include <rndl_ble/ble_pixel_service.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -36,11 +35,17 @@ void app_main(void) {
     ESP_ERROR_CHECK(rndl_led_panel_driver_new(&config, &led_driver));
     ESP_ERROR_CHECK(rndl_surface_create(&surface_config, led_driver, &surface));
 
+    static const rndl_color24_t black = {.red = 0, .green = 0, .blue = 0};
+    surface->clear(surface, &black);
+    surface->render(surface);
+
+    const rndl_ble_service_config_t ble_config = {
+        .surface = surface,
+        .device_name = "rndl-panel",
+    };
+    ESP_ERROR_CHECK(rndl_ble_service_start(&ble_config));
+
     ESP_LOGI(TAG, "startup complete");
-
-    example_raindrops(surface, &surface_config);
-
-    ESP_LOGI(TAG, "pattern complete");
 
     for (;;) {
         vTaskDelay(portMAX_DELAY);

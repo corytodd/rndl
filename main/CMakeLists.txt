@@ -11,7 +11,8 @@ set(SOURCES
 
 set(REQ
     esp_timer
-    rndl)
+    rndl
+    rndl_ble)
 
 idf_component_register(SRCS ${SOURCES}
                        INCLUDE_DIRS "."
