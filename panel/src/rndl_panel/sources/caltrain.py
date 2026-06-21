@@ -135,7 +135,7 @@ class CaltrainSource(PanelSource):
                     south_min = minutes_until(south)
                     print(f"{time.strftime('%H:%M:%S')} north={north_min} min, south={south_min} min")
                     write_frame_atomic(render_frame(north_min, south_min), framebuffer_path)
-                except httpx.HTTPError as e:
+                except (httpx.HTTPError, ValueError, KeyError, TypeError) as e:
                     print(f"{time.strftime('%H:%M:%S')} caltrain fetch failed: {e}")
                 time.sleep(args.poll_interval)
 
