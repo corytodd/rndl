@@ -1,12 +1,14 @@
+#include "rndl/led_driver/led_panel_driver.h"
+
 #include "rndl/led_driver/led_driver.h"
 #include "rndl/led_driver/led_encoder.h"
-#include "rndl/led_driver/led_panel_driver.h"
 #include "rndl/utils.h"
 
 #include <driver/rmt_tx.h>
 #include <esp_check.h>
 #include <esp_log.h>
 #include <math.h>
+#include <soc/soc_caps.h>
 
 static const char *TAG = "rndl_led_panel_driver";
 
@@ -59,19 +61,14 @@ esp_err_t rndl_led_panel_driver_new(const rndl_led_panel_driver_config_t *config
     panel_driver = calloc(1, sizeof(led_panel_driver_t));
     ESP_GOTO_ON_FALSE(panel_driver, ESP_ERR_NO_MEM, err, TAG, "no mem for led panel driver");
 
-    // RMT docs say channels can borrow extra space from adjacent channels
-    // Since we only need 1 channel, take them all.
-    const int channel_count = 8;
-    const int channel_size = 64;
-    const int trans_queue_depth = 4;
-
     rmt_tx_channel_config_t tx_chan_config = {
         .clk_src = RMT_CLK_SRC_DEFAULT,
         .gpio_num = config->gpio_num,
-        .mem_block_symbols = channel_size * channel_count,
+        .mem_block_symbols = SOC_RMT_MEM_WORDS_PER_CHANNEL,
         .resolution_hz = config->resolution_hz,
-        .trans_queue_depth = trans_queue_depth,
+        .trans_queue_depth = 4,
     };
+    ESP_LOGI(TAG, "allocated RMT with %d block symmbols", SOC_RMT_MEM_WORDS_PER_CHANNEL);
     ESP_GOTO_ON_ERROR(rmt_new_tx_channel(&tx_chan_config, &panel_driver->led_chan), err, TAG,
                       "create RMT TX channel failed");
 
