@@ -9,6 +9,38 @@ config RNDL_GPIO
     int "RNDL GPIO pin"
     default 2
 
+config RNDL_RELAY_GPIO
+    int "Relay GPIO pin (-1 to disable)"
+    default -1
+    help
+        GPIO that controls the output power relay. Set to -1 if no relay is present.
+
+config RNDL_RELAY_ACTIVE_LOW
+    bool "Relay is active low"
+    default n
+    depends on RNDL_RELAY_GPIO != -1
+
+config RNDL_BUTTON_GPIO
+    int "Button GPIO pin (-1 to disable)"
+    default -1
+    help
+        GPIO for the physical button that toggles relay power and clears LEDs. Set to -1 to disable.
+
+config RNDL_BUTTON_DEBOUNCE_BITS
+    int "Button debounce bit count"
+    default 8
+    range 1 31
+    depends on RNDL_BUTTON_GPIO != -1
+    help
+        Number of consecutive identical samples required to register a press.
+        Debounce period is RNDL_BUTTON_DEBOUNCE_BITS * RNDL_BUTTON_SAMPLE_MS. 
+
+config RNDL_BUTTON_SAMPLE_MS
+    int "Button sample interval (ms)"
+    default 5
+    range 1 50
+    depends on RNDL_BUTTON_GPIO != -1
+
 config RNDL_CHANNELS
     int "Number of LED channels"
     default 3

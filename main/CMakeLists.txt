@@ -10,6 +10,7 @@ set(SOURCES
 )
 
 set(REQ
+    esp_driver_gpio
     esp_timer
     rndl
     rndl_ble)
