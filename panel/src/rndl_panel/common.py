@@ -3,13 +3,26 @@
 import asyncio
 import os
 import tempfile
+import time
 from pathlib import Path
 
 PANEL_WIDTH = 16
 PANEL_HEIGHT = 16
 FRAME_SIZE_BYTES = PANEL_WIDTH * PANEL_HEIGHT * 3
 
-DEFAULT_FRAMEBUFFER_PATH = Path(tempfile.gettempdir()) / "rndl_panel_framebuffer.bin"
+
+def _default_state_dir() -> Path:
+    """A small per-app directory, distinct from the shared system temp dir. Only this app
+    writes here, so it's a narrow, low-risk target to exclude from AV real-time scanning if
+    the rename race in write_frame_atomic needs to be avoided rather than just retried."""
+    if os.name == "nt":
+        base = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local"))
+    else:
+        base = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local" / "state"))
+    return base / "rndl-panel"
+
+
+DEFAULT_FRAMEBUFFER_PATH = _default_state_dir() / "framebuffer.bin"
 
 DEVICE_NAME = "rndl-panel"
 PIXEL_WRITE_CHAR_UUID = "0000c5d3-6f61-a869-4129-89e9adca439c"
@@ -19,6 +32,12 @@ PIXEL_RECORD_SIZE_BYTES = 5
 WRITE_RETRIES = 5
 WRITE_RETRY_BACKOFF_S = 0.2
 
+# Windows won't let os.replace() clobber a file another process has open, unlike POSIX
+# rename().
+FRAME_REPLACE_RETRIES = 20
+FRAME_REPLACE_BACKOFF_S = 0.005
+FRAME_REPLACE_MAX_BACKOFF_S = 0.1
+
 # 256 WS2812 LEDs at full white draw too much current. Cap this to avoid sadness.
 DEFAULT_BRIGHTNESS_CAP = 32
 
@@ -26,7 +45,7 @@ DEFAULT_BRIGHTNESS_CAP = 32
 async def with_retry(coro_fn, *args, retries: int = WRITE_RETRIES, backoff: float = WRITE_RETRY_BACKOFF_S, **kwargs):
     """Retry an async BLE operation a few times. WinRT/bleak can flake with a
     spurious Windows error: 'operation was canceled by the user' OSError.
-    
+
     TODO: does Linux see this same issue? Might be my BLE adapter.
     """
     for attempt in range(1, retries + 1):
@@ -46,7 +65,16 @@ def write_frame_atomic(frame: bytes, path: Path) -> None:
     try:
         with os.fdopen(fd, "wb") as f:
             f.write(frame)
-        os.replace(tmp_path, path)
+        backoff = FRAME_REPLACE_BACKOFF_S
+        for attempt in range(1, FRAME_REPLACE_RETRIES + 1):
+            try:
+                os.replace(tmp_path, path)
+                break
+            except PermissionError:
+                if attempt == FRAME_REPLACE_RETRIES:
+                    raise
+                time.sleep(backoff)
+                backoff = min(backoff * 2, FRAME_REPLACE_MAX_BACKOFF_S)
     except BaseException:
         os.unlink(tmp_path)
         raise
