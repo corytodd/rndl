@@ -28,6 +28,13 @@ def build_parser() -> tuple[argparse.ArgumentParser, dict]:
         help=f"Path to the shared framebuffer file (default: {common.DEFAULT_FRAMEBUFFER_PATH})",
     )
     parser.add_argument("--device-name", default=common.DEVICE_NAME, help="BLE advertised name of the panel")
+    parser.add_argument(
+        "--brightness-cap",
+        type=int,
+        default=common.DEFAULT_BRIGHTNESS_CAP,
+        help=f"Max per-channel value (0-255) for every pixel sent to the panel, to bound worst-case "
+        f"current draw (default: {common.DEFAULT_BRIGHTNESS_CAP})",
+    )
 
     sub = parser.add_subparsers(dest="command")
 
@@ -50,23 +57,9 @@ def build_parser() -> tuple[argparse.ArgumentParser, dict]:
 
     probe_parser = sub.add_parser("probe", help="Dump GATT services and push random test pixels")
     probe_parser.add_argument("--num-pixels", type=int, default=16)
-    probe_parser.add_argument(
-        "--brightness-cap",
-        type=int,
-        default=bench.DEFAULT_BRIGHTNESS_CAP,
-        help=f"Max per-channel value (0-255) for test pixels, to bound worst-case current draw "
-        f"(default: {bench.DEFAULT_BRIGHTNESS_CAP})",
-    )
 
     bench_parser = sub.add_parser("bench", help="Measure BLE write throughput to the panel")
     bench_parser.add_argument("--duration", type=float, default=5.0, help="Seconds to run each write mode")
-    bench_parser.add_argument(
-        "--brightness-cap",
-        type=int,
-        default=bench.DEFAULT_BRIGHTNESS_CAP,
-        help=f"Max per-channel value (0-255) for benchmark pixels, to bound worst-case current draw "
-        f"(default: {bench.DEFAULT_BRIGHTNESS_CAP})",
-    )
 
     return parser, registry
 
@@ -88,9 +81,9 @@ def main() -> None:
                 target=_run_source_or_die, args=(source, args.framebuffer, args), daemon=True
             )
             stats_thread.start()
-            asyncio.run(daemon.run(args.framebuffer, args.device_name))
+            asyncio.run(daemon.run(args.framebuffer, args.device_name, args.brightness_cap))
     elif command == "daemon":
-        asyncio.run(daemon.run(args.framebuffer, args.device_name))
+        asyncio.run(daemon.run(args.framebuffer, args.device_name, args.brightness_cap))
     elif command == "probe":
         asyncio.run(probe.run(args.device_name, args.num_pixels, args.brightness_cap))
     elif command == "bench":

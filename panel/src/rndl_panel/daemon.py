@@ -8,7 +8,16 @@ from pathlib import Path
 
 from bleak import BleakClient, BleakScanner
 
-from .common import FRAME_SIZE_BYTES, PANEL_WIDTH, PIXEL_RECORD_SIZE_BYTES, PIXEL_WRITE_CHAR_UUID, read_frame, with_retry
+from .common import (
+    DEFAULT_BRIGHTNESS_CAP,
+    FRAME_SIZE_BYTES,
+    PANEL_WIDTH,
+    PIXEL_RECORD_SIZE_BYTES,
+    PIXEL_WRITE_CHAR_UUID,
+    clamp_brightness,
+    read_frame,
+    with_retry,
+)
 
 POLL_INTERVAL_S = 0.1  # mtime polling, not inotify/watchdog: BLE write latency of about 110ms dwarfs this either way
 DEFAULT_MTU = 23
@@ -45,7 +54,7 @@ def chunk_records(records: bytes, mtu: int):
         yield records[offset : offset + chunk_size]
 
 
-async def watch_and_push(client: BleakClient, framebuffer_path: Path) -> None:
+async def watch_and_push(client: BleakClient, framebuffer_path: Path, brightness_cap: int = DEFAULT_BRIGHTNESS_CAP) -> None:
     mtu = client.mtu_size or DEFAULT_MTU
     print(f"Connected, ATT MTU={mtu}, watching {framebuffer_path}")
 
@@ -56,7 +65,7 @@ async def watch_and_push(client: BleakClient, framebuffer_path: Path) -> None:
         if framebuffer_path.exists():
             mtime = framebuffer_path.stat().st_mtime
             if mtime != last_mtime:
-                current = read_frame(framebuffer_path)
+                current = clamp_brightness(read_frame(framebuffer_path), brightness_cap)
                 records = full_frame_records(current) if previous is None else diff_records(previous, current)
                 try:
                     if records:
@@ -71,7 +80,7 @@ async def watch_and_push(client: BleakClient, framebuffer_path: Path) -> None:
         await asyncio.sleep(POLL_INTERVAL_S)
 
 
-async def run(framebuffer_path: Path, device_name: str) -> None:
+async def run(framebuffer_path: Path, device_name: str, brightness_cap: int = DEFAULT_BRIGHTNESS_CAP) -> None:
     print(f"Scanning for \"{device_name}\"...")
     device = await BleakScanner.find_device_by_name(device_name, timeout=15.0)
     if device is None:
@@ -80,4 +89,4 @@ async def run(framebuffer_path: Path, device_name: str) -> None:
 
     print(f"Found {device.address}, connecting...")
     async with BleakClient(device) as client:
-        await watch_and_push(client, framebuffer_path)
+        await watch_and_push(client, framebuffer_path, brightness_cap)

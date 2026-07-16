@@ -84,3 +84,15 @@ def read_frame(path: Path) -> bytes:
     data = path.read_bytes()
     assert len(data) == FRAME_SIZE_BYTES, f"frame must be {FRAME_SIZE_BYTES} bytes, got {len(data)}"
     return data
+
+
+def clamp_brightness(frame: bytes, cap: int) -> bytes:
+    """Clamp every color channel to at most `cap`, bounding worst-case current draw
+    regardless of what a source rendered."""
+    if cap >= 255:
+        return frame
+    peak = max(frame) if frame else 0
+    if peak <= cap:
+        return frame
+    scale = cap / peak
+    return bytes(round(b * scale) for b in frame)
