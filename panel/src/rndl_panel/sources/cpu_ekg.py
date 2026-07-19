@@ -111,6 +111,12 @@ def sample_peak_signal(phase_start: float, phase_delta: float) -> float:
     return peak_signal
 
 
+def _scale_channel(value: int, fade: float) -> int:
+    if value == 0:
+        return 0
+    return max(1, round(value * fade))
+
+
 def _lerp_color(a: tuple[int, int, int], b: tuple[int, int, int], t: float) -> tuple[int, int, int]:
     t = max(0.0, min(1.0, t))
     r = round(a[0] + (b[0] - a[0]) * t)
@@ -143,9 +149,9 @@ def render_frame(history: deque[int], cpu_fraction: float, base_color: tuple[int
             t = 1.0
         fade = TRAIL_MIN_BRIGHTNESS + (1 - TRAIL_MIN_BRIGHTNESS) * t
 
-        r = round(color[0] * fade)
-        g = round(color[1] * fade)
-        bl = round(color[2] * fade)
+        r = _scale_channel(color[0], fade)
+        g = _scale_channel(color[1], fade)
+        bl = _scale_channel(color[2], fade)
         segment_color = (r, g, bl)
 
         for py in range(y0, y1 + 1):

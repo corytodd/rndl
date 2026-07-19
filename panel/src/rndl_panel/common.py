@@ -87,12 +87,22 @@ def read_frame(path: Path) -> bytes:
 
 
 def clamp_brightness(frame: bytes, cap: int) -> bytes:
-    """Clamp every color channel to at most `cap`, bounding worst-case current draw
-    regardless of what a source rendered."""
+    """Scale the whole frame down so no channel exceeds `cap`, bounding
+    worst-case current draw regardless of what a source rendered. Once a channel
+    started nonzero, keep it at least 1 to avoid shifting the hue.
+    """
     if cap >= 255:
         return frame
     peak = max(frame) if frame else 0
     if peak <= cap:
         return frame
     scale = cap / peak
-    return bytes(round(b * scale) for b in frame)
+
+    scaled = bytearray(len(frame))
+    for i in range(len(frame)):
+        value = frame[i]
+        if value == 0:
+            scaled[i] = 0
+        else:
+            scaled[i] = max(1, round(value * scale))
+    return bytes(scaled)
