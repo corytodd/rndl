@@ -199,6 +199,41 @@ static void start_advertising(const char *device_name) {
     ESP_LOGI(TAG, "advertising started as \"%s\"", device_name);
 }
 
+// Default OS-negotiated intervals are slow (30-60ms) so ask for something close
+// to the BLE spec minimum instead.
+#define RNDL_BLE_CONN_ITVL_MIN_UNITS            6  // 7.5ms, in 1.25ms units
+#define RNDL_BLE_CONN_ITVL_MAX_UNITS            12 // 15ms, in 1.25ms units
+#define RNDL_BLE_CONN_LATENCY                   0
+#define RNDL_BLE_CONN_SUPERVISION_TIMEOUT_UNITS 400 // 4000ms, in 10ms units
+
+// Returns conn_itvl or UINT16_MAX on lookup failure.
+static uint16_t log_conn_params(uint16_t conn_handle, const char *context) {
+    struct ble_gap_conn_desc desc;
+    if (ble_gap_conn_find(conn_handle, &desc) != 0) {
+        ESP_LOGW(TAG, "%s: ble_gap_conn_find failed for handle %d", context, conn_handle);
+        return UINT16_MAX;
+    }
+    // conn_itvl is in 1.25ms units: Core spec, Vol 6, Part B, 4.5.1
+    ESP_LOGI(TAG, "%s: conn interval: %.2f ms (raw=%d), latency=%d, timeout=%d ms", context, desc.conn_itvl * 1.25,
+             desc.conn_itvl, desc.conn_latency, desc.supervision_timeout * 10);
+    return desc.conn_itvl;
+}
+
+static void request_fast_conn_params(uint16_t conn_handle) {
+    const struct ble_gap_upd_params update_params = {
+        .itvl_min = RNDL_BLE_CONN_ITVL_MIN_UNITS,
+        .itvl_max = RNDL_BLE_CONN_ITVL_MAX_UNITS,
+        .latency = RNDL_BLE_CONN_LATENCY,
+        .supervision_timeout = RNDL_BLE_CONN_SUPERVISION_TIMEOUT_UNITS,
+        .min_ce_len = 0,
+        .max_ce_len = 0,
+    };
+    int rc = ble_gap_update_params(conn_handle, &update_params);
+    if (rc != 0) {
+        ESP_LOGW(TAG, "ble_gap_update_params failed: %d", rc);
+    }
+}
+
 static int gap_event_cb(struct ble_gap_event *event, void *arg) {
     RNDL_UNUSED(arg);
 
@@ -206,6 +241,22 @@ static int gap_event_cb(struct ble_gap_event *event, void *arg) {
         case BLE_GAP_EVENT_CONNECT:
             ESP_LOGI(TAG, "connection %s; status=%d", (event->connect.status == 0 ? "established" : "failed"),
                      event->connect.status);
+            if (event->connect.status == 0) {
+                log_conn_params(event->connect.conn_handle, "initial");
+                request_fast_conn_params(event->connect.conn_handle);
+            }
+            return 0;
+        case BLE_GAP_EVENT_CONN_UPDATE:
+            if (event->conn_update.status == 0) {
+                uint16_t itvl = log_conn_params(event->conn_update.conn_handle, "updated");
+                // The central can renegotiate unilaterally; re-assert if it drifts slow.
+                if (itvl != UINT16_MAX && itvl > RNDL_BLE_CONN_ITVL_MAX_UNITS) {
+                    ESP_LOGI(TAG, "conn interval drifted slow, re-requesting fast params");
+                    request_fast_conn_params(event->conn_update.conn_handle);
+                }
+            } else {
+                ESP_LOGW(TAG, "conn param update rejected: status=%d", event->conn_update.status);
+            }
             return 0;
         case BLE_GAP_EVENT_DISCONNECT:
             ESP_LOGI(TAG, "disconnected; reason=%d", event->disconnect.reason);
