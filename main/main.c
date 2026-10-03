@@ -70,6 +70,22 @@ static void button_task(void *arg) {
 }
 #endif // CONFIG_RNDL_BUTTON_GPIO >= 0
 
+// Surface writes mark the surface dirty. This task triggers a render on
+// CONFIG_RNDL_FPS interval to make frame generation independent of the
+// drawing source. A call to render() is a no-op when the surface isn't dirty.
+static void render_task(void *arg) {
+    (void)arg;
+    TickType_t period = pdMS_TO_TICKS(1000 / (CONFIG_RNDL_FPS > 0 ? CONFIG_RNDL_FPS : 1));
+    if (period == 0) {
+        period = 1; // guard against RNDL_FPS exceeding the FreeRTOS tick rate
+    }
+    TickType_t last_wake = xTaskGetTickCount();
+    for (;;) {
+        surface->render(surface);
+        vTaskDelayUntil(&last_wake, period);
+    }
+}
+
 void app_main(void) {
     ESP_LOGI(TAG, "initializing");
 
@@ -102,6 +118,9 @@ void app_main(void) {
     static const rndl_color24_t black = {.red = 0, .green = 0, .blue = 0};
     surface->clear(surface, &black);
     surface->render(surface);
+
+    xTaskCreate(render_task, "render", CONFIG_RNDL_RENDER_STACK_SIZE_BYTES, NULL, CONFIG_RNDL_RENDER_PRIORITY, NULL);
+    ESP_LOGI(TAG, "render task started at %d fps", CONFIG_RNDL_FPS);
 
     const rndl_ble_service_config_t ble_config = {
         .surface = surface,

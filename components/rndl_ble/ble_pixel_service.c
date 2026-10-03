@@ -45,37 +45,29 @@ static uint8_t s_own_addr_type = 0;
 #define PROFILE_LOG_INTERVAL_US (1000 * 1000)
 static uint32_t s_profile_calls = 0;
 static uint32_t s_profile_loop_us = 0;
-static uint32_t s_profile_render_us = 0;
 static int64_t s_profile_window_start_us = 0;
 
-static void profile_record(int64_t t0, int64_t t1, int64_t t2, bool rendered) {
+static void profile_record(int64_t t0, int64_t t1) {
     s_profile_calls++;
     s_profile_loop_us += (uint32_t)(t1 - t0);
-    if (rendered) {
-        s_profile_render_us += (uint32_t)(t2 - t1);
-    }
 
     if (s_profile_window_start_us == 0) {
         s_profile_window_start_us = t0;
         return;
     }
 
-    int64_t window_us = t2 - s_profile_window_start_us;
+    int64_t window_us = t1 - s_profile_window_start_us;
     if (window_us < PROFILE_LOG_INTERVAL_US) {
         return;
     }
 
-    ESP_LOGI(TAG,
-             "hotpath: %" PRIu32 " calls/%.2fs (%.0f/s) | loop avg=%" PRIu32 "us total=%" PRIu32
-             "us | render avg=%" PRIu32 "us total=%" PRIu32 "us",
+    ESP_LOGI(TAG, "hotpath: %" PRIu32 " calls/%.2fs (%.0f/s) | loop avg=%" PRIu32 "us total=%" PRIu32 "us",
              s_profile_calls, window_us / 1e6, s_profile_calls / (window_us / 1e6),
-             s_profile_calls ? s_profile_loop_us / s_profile_calls : 0, s_profile_loop_us,
-             s_profile_calls ? s_profile_render_us / s_profile_calls : 0, s_profile_render_us);
+             s_profile_calls ? s_profile_loop_us / s_profile_calls : 0, s_profile_loop_us);
 
     s_profile_calls = 0;
     s_profile_loop_us = 0;
-    s_profile_render_us = 0;
-    s_profile_window_start_us = t2;
+    s_profile_window_start_us = t1;
 }
 #endif // CONFIG_RNDL_BLE_PIXEL_PROFILING
 
@@ -119,17 +111,12 @@ static int pixel_write_access_cb(uint16_t conn_handle, uint16_t attr_handle, str
         s_surface->draw_pixel(s_surface, &point, &color);
     }
 
-#if CONFIG_RNDL_BLE_PIXEL_PROFILING
-    int64_t t1 = esp_timer_get_time();
-#endif
-
-    if (record_count > 0) {
-        s_surface->render(s_surface);
-    }
+    // render() is handled by main.c's render_task at a fixed CONFIG_RNDL_FPS rate,
+    // decoupled from BLE writes. draw_pixel() already marks the surface dirty, so
+    // there's nothing left for this callback to trigger.
 
 #if CONFIG_RNDL_BLE_PIXEL_PROFILING
-    int64_t t2 = esp_timer_get_time();
-    profile_record(t0, t1, t2, record_count > 0);
+    profile_record(t0, esp_timer_get_time());
 #endif
 
     return 0;
