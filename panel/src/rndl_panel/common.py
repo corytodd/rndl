@@ -3,6 +3,7 @@
 import asyncio
 import os
 import tempfile
+import time
 from pathlib import Path
 
 PANEL_WIDTH = 16
@@ -18,6 +19,9 @@ PIXEL_RECORD_SIZE_BYTES = 5
 
 WRITE_RETRIES = 5
 WRITE_RETRY_BACKOFF_S = 0.2
+
+REPLACE_RETRIES = 5
+REPLACE_RETRY_BACKOFF_S = 0.01
 
 # 256 WS2812 LEDs at full white draw too much current. Cap this to avoid sadness.
 DEFAULT_BRIGHTNESS_CAP = 32
@@ -46,7 +50,16 @@ def write_frame_atomic(frame: bytes, path: Path) -> None:
     try:
         with os.fdopen(fd, "wb") as f:
             f.write(frame)
-        os.replace(tmp_path, path)
+        for attempt in range(1, REPLACE_RETRIES + 1):
+            try:
+                os.replace(tmp_path, path)
+                break
+            except PermissionError:
+                # Windows denies os.replace() if a reader has path
+                # open at that instant.
+                if attempt == REPLACE_RETRIES:
+                    raise
+                time.sleep(REPLACE_RETRY_BACKOFF_S)
     except BaseException:
         os.unlink(tmp_path)
         raise

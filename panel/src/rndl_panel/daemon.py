@@ -56,18 +56,24 @@ async def watch_and_push(client: BleakClient, framebuffer_path: Path) -> None:
         if framebuffer_path.exists():
             mtime = framebuffer_path.stat().st_mtime
             if mtime != last_mtime:
-                current = read_frame(framebuffer_path)
-                records = full_frame_records(current) if previous is None else diff_records(previous, current)
                 try:
-                    if records:
-                        for chunk in chunk_records(records, mtu):
-                            await with_retry(client.write_gatt_char, PIXEL_WRITE_CHAR_UUID, bytes(chunk), response=True)
-                        print(f"{time.strftime('%H:%M:%S')} pushed {len(records) // PIXEL_RECORD_SIZE_BYTES} changed pixels")
-                    previous = current
-                    last_mtime = mtime
-                except OSError as e:
-                    # Don't advance last_mtime/previous: retry this same diff next poll cycle.
-                    print(f"{time.strftime('%H:%M:%S')} write failed after retries ({e}), retrying next cycle")
+                    current = read_frame(framebuffer_path)
+                except PermissionError:
+                    # A writer's os.replace() can momentarily deny readers on
+                    # Windows. Try again on the next tick.
+                    current = None
+                if current is not None:
+                    records = full_frame_records(current) if previous is None else diff_records(previous, current)
+                    try:
+                        if records:
+                            for chunk in chunk_records(records, mtu):
+                                await with_retry(client.write_gatt_char, PIXEL_WRITE_CHAR_UUID, bytes(chunk), response=True)
+                            print(f"{time.strftime('%H:%M:%S')} pushed {len(records) // PIXEL_RECORD_SIZE_BYTES} changed pixels")
+                        previous = current
+                        last_mtime = mtime
+                    except OSError as e:
+                        # Don't advance last_mtime/previous: retry this same diff next poll cycle.
+                        print(f"{time.strftime('%H:%M:%S')} write failed after retries ({e}), retrying next cycle")
         await asyncio.sleep(POLL_INTERVAL_S)
 
 
