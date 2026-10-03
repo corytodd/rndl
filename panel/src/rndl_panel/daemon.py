@@ -12,6 +12,7 @@ from .common import FRAME_SIZE_BYTES, PANEL_WIDTH, PIXEL_RECORD_SIZE_BYTES, PIXE
 
 POLL_INTERVAL_S = 0.1  # mtime polling, not inotify/watchdog: BLE write latency of about 110ms dwarfs this either way
 DEFAULT_MTU = 23
+SKIPPED_FRAME_WARN_THRESHOLD = 10  # consecutive read failures before warning
 
 
 def diff_records(previous: bytes, current: bytes) -> bytearray:
@@ -51,6 +52,7 @@ async def watch_and_push(client: BleakClient, framebuffer_path: Path) -> None:
 
     previous = None  # None means "unknown" and force a full resync on the first frame
     last_mtime = None
+    consecutive_skips = 0
 
     while True:
         if framebuffer_path.exists():
@@ -62,7 +64,12 @@ async def watch_and_push(client: BleakClient, framebuffer_path: Path) -> None:
                     # A writer's os.replace() can momentarily deny readers on
                     # Windows. Try again on the next tick.
                     current = None
+                    consecutive_skips += 1
+                    if consecutive_skips % SKIPPED_FRAME_WARN_THRESHOLD == 0:
+                        print(f"{time.strftime('%H:%M:%S')} WARNING: skipped {consecutive_skips} reads in a row "
+                              f"(framebuffer locked?)")
                 if current is not None:
+                    consecutive_skips = 0
                     records = full_frame_records(current) if previous is None else diff_records(previous, current)
                     try:
                         if records:
