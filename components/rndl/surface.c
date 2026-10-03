@@ -22,7 +22,9 @@ typedef struct {
     uint16_t height;
     size_t buffer_size__bytes;
     uint8_t *buffer;
+    uint8_t *render_buffer;
     SemaphoreHandle_t surface_lock;
+    SemaphoreHandle_t render_lock;
 } internal_surface_t;
 
 #define LOCK_SURFACE(surface)   xSemaphoreTakeRecursive(surface->surface_lock, portMAX_DELAY)
@@ -265,19 +267,27 @@ static esp_err_t surface_render(rndl_surface_t *surface) {
     ESP_GOTO_ON_FALSE(surface, ESP_ERR_INVALID_ARG, err, TAG, "invalid argument: surface is NULL");
     internal_surface_t *internal_surface = __containerof(surface, internal_surface_t, base);
 
+    // render_lock serializes concurrent callers. surface_lock serializes
+    // the actual surface that accumulates changes until it is time to render.
+    xSemaphoreTake(internal_surface->render_lock, portMAX_DELAY);
+
+    bool dirty = false;
     LOCK_SURFACE(internal_surface);
-    if (!internal_surface->is_dirty) {
+    if (internal_surface->is_dirty) {
+        memcpy(internal_surface->render_buffer, internal_surface->buffer, internal_surface->buffer_size__bytes);
+        internal_surface->is_dirty = false;
+        dirty = true;
+    } else {
         ESP_LOGD(TAG, "surface is not dirty, skip rendering");
-        goto out;
+    }
+    UNLOCK_SURFACE(internal_surface);
+
+    if (dirty) {
+        ret = internal_surface->led_driver->write(internal_surface->led_driver, internal_surface->render_buffer,
+                                                  internal_surface->buffer_size__bytes);
     }
 
-    ret = internal_surface->led_driver->write(internal_surface->led_driver, internal_surface->buffer,
-                                              internal_surface->buffer_size__bytes);
-    internal_surface->is_dirty = false;
-    goto out;
-
-out:
-    UNLOCK_SURFACE(internal_surface);
+    xSemaphoreGive(internal_surface->render_lock);
 err:
     return ret;
 }
@@ -294,6 +304,9 @@ esp_err_t rndl_surface_create(const rndl_surface_config_t *config, rndl_led_driv
     internal_surface->surface_lock = xSemaphoreCreateMutex();
     ESP_GOTO_ON_FALSE(internal_surface->surface_lock, ESP_ERR_NO_MEM, err, TAG, "no mem for surface lock");
 
+    internal_surface->render_lock = xSemaphoreCreateMutex();
+    ESP_GOTO_ON_FALSE(internal_surface->render_lock, ESP_ERR_NO_MEM, err, TAG, "no mem for surface render lock");
+
     internal_surface->base.draw_bitmap = surface_draw_bitmap;
     internal_surface->base.clear = surface_clear;
     internal_surface->base.draw_circle = surface_draw_circle;
@@ -308,6 +321,10 @@ esp_err_t rndl_surface_create(const rndl_surface_config_t *config, rndl_led_driv
     internal_surface->buffer_size__bytes = config->width * config->height * sizeof(rndl_color24_t);
     internal_surface->buffer = calloc(1, internal_surface->buffer_size__bytes);
     ESP_GOTO_ON_FALSE(internal_surface->buffer, ESP_ERR_NO_MEM, err, TAG, "no mem for surface buffer");
+
+    internal_surface->render_buffer = calloc(1, internal_surface->buffer_size__bytes);
+    ESP_GOTO_ON_FALSE(internal_surface->render_buffer, ESP_ERR_NO_MEM, err, TAG, "no mem for surface render buffer");
+
     *surface_handle = &internal_surface->base;
 
     ESP_LOGD(TAG, "surface created: %d x %d (buffer %d bytes)", config->width, config->height,
@@ -316,9 +333,13 @@ esp_err_t rndl_surface_create(const rndl_surface_config_t *config, rndl_led_driv
 
 err:
     if (internal_surface) {
+        if (internal_surface->render_lock) {
+            vSemaphoreDelete(internal_surface->render_lock);
+        }
         if (internal_surface->surface_lock) {
             vSemaphoreDelete(internal_surface->surface_lock);
         }
+        free(internal_surface->render_buffer);
         free(internal_surface->buffer);
     }
     free(internal_surface);
