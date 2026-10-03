@@ -1,4 +1,5 @@
-CONFIG_DEBUG = sdkconfig.debug
+CONFIG_DEFAULTS = sdkconfig.defaults
+CONFIG_DEBUG = $(CONFIG_DEFAULTS);sdkconfig.debug
 
 all: rndl
 
@@ -6,7 +7,7 @@ rndl:
 	idf.py build
 
 debug-rndl:
-	idf.py build -DSDKCONFIG_DEFAULTS=$(CONFIG_DEBUG)
+	idf.py build -DSDKCONFIG_DEFAULTS="$(CONFIG_DEBUG)"
 
 flash:
 	idf.py flash
@@ -14,6 +15,6 @@ flash:
 
 clean:
 	idf.py clean
-	rm sdkconfig
+	rm -f sdkconfig sdkconfig.old
 
 .PHONY: rndl debug-rndl clean
