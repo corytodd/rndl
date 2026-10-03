@@ -316,6 +316,9 @@ esp_err_t rndl_surface_create(const rndl_surface_config_t *config, rndl_led_driv
 
 err:
     if (internal_surface) {
+        if (internal_surface->surface_lock) {
+            vSemaphoreDelete(internal_surface->surface_lock);
+        }
         free(internal_surface->buffer);
     }
     free(internal_surface);
