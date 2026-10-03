@@ -15,8 +15,14 @@
 #include <nvs_flash.h>
 #include <services/gap/ble_svc_gap.h>
 #include <services/gatt/ble_svc_gatt.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+
+#if CONFIG_RNDL_BLE_PIXEL_PROFILING
+#include <esp_timer.h>
+#include <inttypes.h>
+#endif
 
 static const char *TAG = "rndl_ble";
 
@@ -33,6 +39,45 @@ static rndl_surface_handle_t s_surface = NULL;
 static uint16_t s_width = 0;
 static uint16_t s_height = 0;
 static uint8_t s_own_addr_type = 0;
+
+#if CONFIG_RNDL_BLE_PIXEL_PROFILING
+// Rolling PROFILE_LOG_INTERVAL_US for measuring BLE round-trip process time
+#define PROFILE_LOG_INTERVAL_US (1000 * 1000)
+static uint32_t s_profile_calls = 0;
+static uint32_t s_profile_loop_us = 0;
+static uint32_t s_profile_render_us = 0;
+static int64_t s_profile_window_start_us = 0;
+
+static void profile_record(int64_t t0, int64_t t1, int64_t t2, bool rendered) {
+    s_profile_calls++;
+    s_profile_loop_us += (uint32_t)(t1 - t0);
+    if (rendered) {
+        s_profile_render_us += (uint32_t)(t2 - t1);
+    }
+
+    if (s_profile_window_start_us == 0) {
+        s_profile_window_start_us = t0;
+        return;
+    }
+
+    int64_t window_us = t2 - s_profile_window_start_us;
+    if (window_us < PROFILE_LOG_INTERVAL_US) {
+        return;
+    }
+
+    ESP_LOGI(TAG,
+             "hotpath: %" PRIu32 " calls/%.2fs (%.0f/s) | loop avg=%" PRIu32 "us total=%" PRIu32
+             "us | render avg=%" PRIu32 "us total=%" PRIu32 "us",
+             s_profile_calls, window_us / 1e6, s_profile_calls / (window_us / 1e6),
+             s_profile_calls ? s_profile_loop_us / s_profile_calls : 0, s_profile_loop_us,
+             s_profile_calls ? s_profile_render_us / s_profile_calls : 0, s_profile_render_us);
+
+    s_profile_calls = 0;
+    s_profile_loop_us = 0;
+    s_profile_render_us = 0;
+    s_profile_window_start_us = t2;
+}
+#endif // CONFIG_RNDL_BLE_PIXEL_PROFILING
 
 static int pixel_write_access_cb(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt,
                                  void *arg) {
@@ -56,6 +101,10 @@ static int pixel_write_access_cb(uint16_t conn_handle, uint16_t attr_handle, str
 
     ESP_LOGD(TAG, "pixel write: len=%d record_count=%d", len, record_count);
 
+#if CONFIG_RNDL_BLE_PIXEL_PROFILING
+    int64_t t0 = esp_timer_get_time();
+#endif
+
     uint8_t record[PIXEL_RECORD_SIZE__BYTES];
     for (uint16_t i = 0; i < record_count; ++i) {
         uint16_t offset = i * PIXEL_RECORD_SIZE__BYTES;
@@ -70,9 +119,18 @@ static int pixel_write_access_cb(uint16_t conn_handle, uint16_t attr_handle, str
         s_surface->draw_pixel(s_surface, &point, &color);
     }
 
+#if CONFIG_RNDL_BLE_PIXEL_PROFILING
+    int64_t t1 = esp_timer_get_time();
+#endif
+
     if (record_count > 0) {
         s_surface->render(s_surface);
     }
+
+#if CONFIG_RNDL_BLE_PIXEL_PROFILING
+    int64_t t2 = esp_timer_get_time();
+    profile_record(t0, t1, t2, record_count > 0);
+#endif
 
     return 0;
 }

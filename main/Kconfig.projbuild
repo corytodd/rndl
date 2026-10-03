@@ -64,4 +64,10 @@ config RNDL_RENDER_STACK_SIZE_BYTES
 config RNDL_RENDER_PRIORITY
     int "Render task priority (higher is higher priority)"
     default 5
+
+config RNDL_BLE_PIXEL_PROFILING
+    bool "Profile hot paths"
+    default n
+    help
+        Enable profiling measurements.
 endmenu
