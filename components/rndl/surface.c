@@ -58,10 +58,9 @@ static esp_err_t surface_clear(rndl_surface_t *surface, const rndl_color24_t *co
     internal_surface_t *internal_surface = __containerof(surface, internal_surface_t, base);
 
     LOCK_SURFACE(internal_surface);
-    // TODO: is this optimization actually doing anything? Maybe we should aways loop through the buffer
-    // and let the compiler decide if it's worth optimizing.
-    if (color->red == 0 && color->green == 0 && color->blue == 0) {
-        memset(internal_surface->buffer, 0, internal_surface->buffer_size__bytes);
+    // If all components are the same, memset the whole buffer.
+    if (color->red == color->green && color->green == color->blue) {
+        memset(internal_surface->buffer, color->red, internal_surface->buffer_size__bytes);
     } else {
         for (int i = 0; i < internal_surface->buffer_size__bytes; i += sizeof(rndl_color24_t)) {
             memcpy(&internal_surface->buffer[i], color, sizeof(rndl_color24_t));
