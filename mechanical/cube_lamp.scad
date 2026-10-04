@@ -77,11 +77,20 @@ wall_thickness = 3.2; // mm, frame side walls
 floor_thickness = 2.4; // mm
 corner_radius = 4.0; // mm, outer corner fillet
 ledge_width = 2.0; // mm, inward step the panel rests on
-ledge_thickness = 1.6; // mm, height of the panel-support step
+ledge_thickness = 1.6; // mm, height of the flat panel-support shelf
+ledge_chamfer = 2.0; // mm, height of the taper into the ledge (= ledge_width -> 45 degrees, self-supporting)
 mount_wall_thickness = 1.6; // mm, PCB press-fit mount walls
 mount_wall_overhang = 3.6; // mm, how far the mount walls rise above the PCB top (raised +3mm per test print)
 pin_height = 3.0; // mm, mating pin above the frame's top rim
 pin_width = 1.4; // mm, radial width of the mating pin
+
+// Panel support pillars: straight vertical posts from the floor up to the
+// ledge height, so the 160mm panel span doesn't rely on the perimeter
+// ledge alone. No overhangs, so they need no print supports of their own.
+support_pillar_size = 6.0; // mm, square cross-section
+support_pillar_spacing = 50.0; // mm, grid pitch, centered on the cavity
+support_pillar_inset = 20.0; // mm, keep-out margin from the cavity walls
+support_mount_clearance = 6.0; // mm, keep-out margin around the PCB mount
 
 // Shroud construction ---------------------------------------------------------
 shroud_wall_thickness = 1.6; // mm, single-wall vase shell (above the groove)
@@ -122,6 +131,11 @@ groove_depth = pin_height + pin_seat_clearance;
 pcb_pocket_len = pcb_length - pcb_fit_interference; // y-span (press-fit)
 pcb_pocket_wid = pcb_width - pcb_fit_interference; // x-span (press-fit)
 
+// Mount footprint, for the support pillar grid to steer clear of.
+mount_near_y = -panel_opening_w / 2 + usb_extend;
+mount_far_y = mount_near_y + pcb_pocket_len + 2 * mount_wall_thickness;
+mount_half_w = pcb_pocket_wid / 2 + mount_wall_thickness;
+
 // USB-C cutout envelope, measured from the floor (PCB mounting surface) up.
 usb_port_height = usb_connector_height + usb_port_clearance;
 usb_port_bottom = (usb_connector_top - usb_connector_height) - usb_port_clearance / 2;
@@ -161,9 +175,8 @@ module rring(l, w, r, t) {
 module pcb_mount() {
     outer_len = pcb_pocket_len + 2 * mount_wall_thickness;
     pocket_depth = pcb_height + mount_wall_overhang;
-    near_y = -panel_opening_w / 2 + usb_extend; // PCB edge, set back for the connector overhang
 
-    translate([0, near_y + outer_len / 2, floor_thickness])
+    translate([0, mount_near_y + outer_len / 2, floor_thickness])
         difference() {
             linear_extrude(height = pocket_depth)
                 square([pcb_pocket_wid + 2 * mount_wall_thickness, outer_len], center = true);
@@ -175,6 +188,30 @@ module pcb_mount() {
             // Centered gap in the far (wire-side) wall so wiring to the LED panel can exit.
             translate([-wire_gap_width / 2, pcb_pocket_len / 2 - 0.5, -0.5])
                 cube([wire_gap_width, mount_wall_thickness + 1, pocket_depth + 1], center = false);
+        }
+}
+
+// Sparse grid of straight vertical posts from the floor to the ledge height,
+// backing up the 160mm panel span against sag. Each post is a simple prism
+// with no overhangs, so it prints without any support material of its own;
+// the grid skips any point that would land inside the PCB mount footprint.
+module support_pillars() {
+    pillar_h = electronics_height + ledge_thickness;
+    half_l = panel_opening_l / 2 - support_pillar_inset;
+    half_w = panel_opening_w / 2 - support_pillar_inset;
+    steps_l = floor(half_l / support_pillar_spacing);
+    steps_w = floor(half_w / support_pillar_spacing);
+    clear_x = mount_half_w + support_mount_clearance + support_pillar_size / 2;
+    clear_y_min = mount_near_y - support_mount_clearance - support_pillar_size / 2;
+    clear_y_max = mount_far_y + support_mount_clearance + support_pillar_size / 2;
+
+    for (i = [-steps_l : steps_l])
+        for (j = [-steps_w : steps_w]) {
+            px = i * support_pillar_spacing;
+            py = j * support_pillar_spacing;
+            if (!(abs(px) < clear_x && py > clear_y_min && py < clear_y_max))
+                translate([px, py, floor_thickness + pillar_h / 2])
+                    cube([support_pillar_size, support_pillar_size, pillar_h], center = true);
         }
 }
 
@@ -192,12 +229,21 @@ module base_frame() {
                           max(corner_radius - pin_outer_margin, 0.2), pin_width);
         }
 
-        // Lower electronics cavity (full opening width).
+        // Lower electronics cavity (full opening width), stopping short of
+        // the ledge to leave room for the chamfer below it.
         translate([0, 0, floor_thickness])
-            linear_extrude(height = electronics_height)
+            linear_extrude(height = electronics_height - ledge_chamfer)
                 rrect(panel_opening_l, panel_opening_w, max(corner_radius - wall_thickness, 0.3));
 
-        // Ledge step: a narrower opening forms the shelf the panel rests on.
+        // Chamfer into the ledge at 45 degrees (ledge_chamfer == ledge_width)
+        // instead of an abrupt step, so the shelf prints without an overhang.
+        translate([0, 0, floor_thickness + electronics_height - ledge_chamfer])
+            linear_extrude(height = ledge_chamfer,
+                            scale = [(panel_opening_l - 2 * ledge_width) / panel_opening_l,
+                                     (panel_opening_w - 2 * ledge_width) / panel_opening_w])
+                rrect(panel_opening_l, panel_opening_w, max(corner_radius - wall_thickness, 0.3));
+
+        // Ledge: a flat, constant-width shelf the panel actually rests on.
         translate([0, 0, floor_thickness + electronics_height])
             linear_extrude(height = ledge_thickness)
                 rrect(panel_opening_l - 2 * ledge_width, panel_opening_w - 2 * ledge_width,
@@ -215,6 +261,7 @@ module base_frame() {
     }
 
     pcb_mount();
+    support_pillars();
 }
 
 //--------------------------------------------------------------------------
