@@ -97,10 +97,12 @@ shroud_wall_thickness = 1.6; // mm, single-wall vase shell (above the groove)
 groove_wall_thickness = 1.0; // mm, thin retaining walls that form the groove
 pin_fit_clearance = 0.2; // mm, per-side radial clearance between pin and groove
 pin_seat_clearance = 0.4; // mm, vertical clearance so the shroud seats flush
+groove_ceiling = 1.0; // mm, solid roof over the pocket connecting its inner
+                      // wall to the outer wall (otherwise it's a detached ring)
 
 // Which part to generate: base (print), shroud (print), or an assembled
 // preview with translucent LED panel / PCB mock-ups for a fit check.
-part = "base"; // [base:Base (print), shroud:Shroud (print), preview:Preview assembly]
+part = "shroud"; // [base:Base (print), shroud:Shroud (print), preview:Preview assembly]
 
 $fn = 32;
 
@@ -126,7 +128,8 @@ pin_outer_margin = groove_wall_thickness + pin_fit_clearance;
 pin_outer_half_l = frame_outer_l / 2 - pin_outer_margin;
 pin_outer_half_w = frame_outer_w / 2 - pin_outer_margin;
 
-groove_depth = pin_height + pin_seat_clearance;
+groove_pocket_depth = pin_height + pin_seat_clearance; // how far the pin actually inserts
+groove_depth = groove_pocket_depth + groove_ceiling; // total height of the groove block
 
 pcb_pocket_len = pcb_length - pcb_fit_interference; // y-span (press-fit)
 pcb_pocket_wid = pcb_width - pcb_fit_interference; // x-span (press-fit)
@@ -269,33 +272,37 @@ module base_frame() {
 //--------------------------------------------------------------------------
 
 module shroud() {
-    // Nested boundaries, outer to inner. The outer wall (a/b) is flush with
-    // the frame's own outer surface so the assembled parts read as one
-    // continuous wall; the inner wall (c/d) traps the pin against it.
-    a_l = frame_outer_l; // outer surface of the shroud, flush with the frame
+    // The groove is a solid block (outer wall + pin gap + inner wall, all
+    // one connected piece) with a BLIND pocket cut from underneath to catch
+    // the pin - open at the bottom for assembly, but with a solid ceiling
+    // (groove_ceiling) left at the top so the inner wall isn't a separate
+    // floating ring, detached from the rest of the shroud.
+    a_l = frame_outer_l; // outer surface, flush with the frame
     a_w = frame_outer_w;
-    b_l = a_l - 2 * groove_wall_thickness; // inner face of the outer wall
-    b_w = a_w - 2 * groove_wall_thickness;
     pin_gap = pin_width + 2 * pin_fit_clearance;
-    c_l = b_l - 2 * pin_gap; // outer face of the inner (groove) wall
-    c_w = b_w - 2 * pin_gap;
-    d_l = c_l - 2 * groove_wall_thickness; // innermost opening
-    d_w = c_w - 2 * groove_wall_thickness;
+    groove_wall_span = 2 * groove_wall_thickness + pin_gap; // full a-to-d thickness
+
+    b_l = a_l - 2 * groove_wall_thickness; // pocket's outer edge
+    b_w = a_w - 2 * groove_wall_thickness;
 
     r_a = corner_radius;
     r_b = max(r_a - groove_wall_thickness, 0.2);
-    r_c = max(r_b - pin_gap, 0.2);
 
-    // Groove section: double wall, open channel between b and c captures the pin.
-    linear_extrude(height = groove_depth)
-        union() {
-            rring(a_l, a_w, r_a, groove_wall_thickness);
-            rring(c_l, c_w, r_c, groove_wall_thickness);
-        }
+    difference() {
+        // Solid groove block - fully connected, no separate floating ring.
+        linear_extrude(height = groove_depth)
+            rring(a_l, a_w, r_a, groove_wall_span);
 
-    // Vase body above the groove: single continuous wall, gentle outward taper.
+        // Blind pocket for the pin, cut from underneath only.
+        translate([0, 0, -0.5])
+            linear_extrude(height = groove_pocket_depth + 0.5)
+                rring(b_l, b_w, r_b, pin_gap);
+    }
+
+    // Body above the groove: straight-walled (no taper), like a cube with no
+    // bottom - only the groove at the base contains the mating slot.
     translate([0, 0, groove_depth])
-        linear_extrude(height = shroud_height - groove_depth, scale = 1.08)
+        linear_extrude(height = shroud_height - groove_depth)
             rring(a_l, a_w, r_a, shroud_wall_thickness);
 }
 
