@@ -51,7 +51,7 @@
 base_length = 160.0; // mm, nominal panel opening (length)
 base_width = 160.0; // mm, nominal panel opening (width)
 
-shroud_height = 25.0; // mm
+shroud_height = 8.0; // mm
 
 // LED panel -----------------------------------------------------------------
 panel_height = 8.0; // mm, includes clearance for wiring beneath the panel
@@ -100,9 +100,18 @@ pin_seat_clearance = 0.4; // mm, vertical clearance so the shroud seats flush
 groove_ceiling = 1.0; // mm, solid roof over the pocket connecting its inner
                       // wall to the outer wall (otherwise it's a detached ring)
 
-// Which part to generate: base (print), shroud (print), or an assembled
-// preview with translucent LED panel / PCB mock-ups for a fit check.
-part = "shroud"; // [base:Base (print), shroud:Shroud (print), preview:Preview assembly]
+// Diffuser lid: a separate thin panel that drops into a lip at the top of
+// the shroud. Printed on its own (different filament/thickness than the
+// shroud) so diffusion can be tuned independently - thickness is a guess
+// until a transmission test print nails it down.
+diffuser_thickness = 1.6; // mm, lid panel thickness - tune from a test print
+diffuser_fit_clearance = 0.4; // mm, total drop-in clearance around the lid
+diffuser_lip_width = 1.2; // mm, bearing ledge width (also sets the 45-degree chamfer height)
+diffuser_rim_clearance = 0.2; // mm, vertical clearance above the lid under the retaining rim
+
+// Which part to generate: base/shroud/lid (print), or an assembled preview
+// with translucent LED panel / PCB mock-ups for a fit check.
+part = "shroud"; // [base:Base (print), shroud:Shroud (print), lid:Diffuser lid (print), preview:Preview assembly]
 
 $fn = 32;
 
@@ -130,6 +139,22 @@ pin_outer_half_w = frame_outer_w / 2 - pin_outer_margin;
 
 groove_pocket_depth = pin_height + pin_seat_clearance; // how far the pin actually inserts
 groove_depth = groove_pocket_depth + groove_ceiling; // total height of the groove block
+
+// Diffuser lid seat, at the top of the shroud. The outer face stays flush
+// and straight the whole way up; only the inner face steps in to form the
+// lip, via a 45-degree chamfer so it prints without an overhang.
+diffuser_chamfer = diffuser_lip_width; // height of the taper (== run, for 45 degrees)
+diffuser_rim_height = diffuser_thickness + diffuser_rim_clearance;
+shroud_body_inner_l = frame_outer_l - 2 * shroud_wall_thickness; // straight-wall inner opening
+shroud_body_inner_w = frame_outer_w - 2 * shroud_wall_thickness;
+shroud_body_r = max(corner_radius - shroud_wall_thickness, 0.2);
+diffuser_opening_l = shroud_body_inner_l - 2 * diffuser_lip_width; // opening at the lip
+diffuser_opening_w = shroud_body_inner_w - 2 * diffuser_lip_width;
+diffuser_opening_r = max(shroud_body_r - diffuser_lip_width, 0.2);
+diffuser_lid_l = diffuser_opening_l - diffuser_fit_clearance; // actual lid panel size
+diffuser_lid_w = diffuser_opening_w - diffuser_fit_clearance;
+diffuser_lid_r = max(diffuser_opening_r - diffuser_fit_clearance / 2, 0.2);
+diffuser_lid_z = shroud_height - diffuser_rim_height; // lid's seated height, in the shroud's local frame
 
 pcb_pocket_len = pcb_length - pcb_fit_interference; // y-span (press-fit)
 pcb_pocket_wid = pcb_width - pcb_fit_interference; // x-span (press-fit)
@@ -299,11 +324,39 @@ module shroud() {
                 rring(b_l, b_w, r_b, pin_gap);
     }
 
-    // Body above the groove: straight-walled (no taper), like a cube with no
-    // bottom - only the groove at the base contains the mating slot.
+    // Straight body above the groove - no taper, flush with the frame -
+    // up to where the lid lip starts.
+    body_h = shroud_height - groove_depth - diffuser_chamfer - diffuser_rim_height;
     translate([0, 0, groove_depth])
-        linear_extrude(height = shroud_height - groove_depth)
+        linear_extrude(height = body_h)
             rring(a_l, a_w, r_a, shroud_wall_thickness);
+
+    // Chamfer into the lid lip at 45 degrees: the outer face stays flush
+    // and straight, only the inner face steps inward, so it prints without
+    // an overhang (same trick as the base's ledge).
+    translate([0, 0, groove_depth + body_h])
+        difference() {
+            linear_extrude(height = diffuser_chamfer)
+                rrect(a_l, a_w, r_a);
+            translate([0, 0, -0.5])
+                linear_extrude(height = diffuser_chamfer + 1,
+                                scale = [diffuser_opening_l / shroud_body_inner_l,
+                                         diffuser_opening_w / shroud_body_inner_w])
+                    rrect(shroud_body_inner_l, shroud_body_inner_w, shroud_body_r);
+        }
+
+    // Retaining rim: holds the lid down and hides its edge, open at the top.
+    translate([0, 0, groove_depth + body_h + diffuser_chamfer])
+        linear_extrude(height = diffuser_rim_height)
+            rring(a_l, a_w, r_a, shroud_wall_thickness + diffuser_lip_width);
+}
+
+// Diffuser lid: a thin flat panel that drops into the lip at the top of the
+// shroud. Printed as its own part so thickness/filament can be tuned for
+// light transmission independent of the shroud.
+module diffuser_lid() {
+    linear_extrude(height = diffuser_thickness)
+        rrect(diffuser_lid_l, diffuser_lid_w, diffuser_lid_r);
 }
 
 //--------------------------------------------------------------------------
@@ -337,10 +390,14 @@ if (part == "base") {
     base_frame();
 } else if (part == "shroud") {
     shroud();
+} else if (part == "lid") {
+    diffuser_lid();
 } else {
     base_frame();
     translate([0, 0, frame_rim_h])
         shroud();
+    translate([0, 0, frame_rim_h + diffuser_lid_z])
+        diffuser_lid();
     %panel_mock();
     %pcb_mock();
 }
