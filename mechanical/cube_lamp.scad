@@ -51,12 +51,25 @@
 base_length = 160.0; // mm, nominal panel opening (length)
 base_width = 160.0; // mm, nominal panel opening (width)
 
-shroud_height = 8.0; // mm
+shroud_height = 160.0; // mm
 
 // LED panel -----------------------------------------------------------------
 panel_height = 8.0; // mm, includes clearance for wiring beneath the panel
 panel_fit_clearance = 0.4; // mm, total clearance so the panel drops into the frame
-panel_top_clearance = 0.5; // mm, gap above the panel before the top rim/pin
+panel_top_clearance = 0.5; // mm, small component clearance before the baffle rests on the panel
+
+// Baffle grid: a 16x16 waffle insert that rests directly on the LED panel,
+// isolating each LED's light so color-blend variance stays visible instead
+// of washing into one tone, and doubling as a retainer that keeps the
+// panel flat against the support pillars below it. Opaque filament is the
+// point - it needs to BLOCK light sideways, unlike the translucent
+// diffuser cap. Height is ~1:1 with the 10mm LED pitch for a ~45-degree
+// cutoff; the remaining clearance is a short gap for final softening
+// before the shroud.
+baffle_height = 9.0; // mm, cell wall height
+baffle_wall_thickness = 1.0; // mm, opaque divider thickness
+baffle_fit_clearance = 0.4; // mm, total clearance so the grid drops into the panel cavity
+baffle_top_clearance = 3.0; // mm, gap above the baffle before the rim/shroud
 
 // Eternaglo Pico controller board --------------------------------------------
 pcb_length = 36.0; // mm
@@ -100,18 +113,16 @@ pin_seat_clearance = 0.4; // mm, vertical clearance so the shroud seats flush
 groove_ceiling = 1.0; // mm, solid roof over the pocket connecting its inner
                       // wall to the outer wall (otherwise it's a detached ring)
 
-// Diffuser lid: a separate thin panel that drops into a lip at the top of
-// the shroud. Printed on its own (different filament/thickness than the
-// shroud) so diffusion can be tuned independently - thickness is a guess
-// until a transmission test print nails it down.
-diffuser_thickness = 1.6; // mm, lid panel thickness - tune from a test print
-diffuser_fit_clearance = 0.4; // mm, total drop-in clearance around the lid
-diffuser_lip_width = 1.2; // mm, bearing ledge width (also sets the 45-degree chamfer height)
-diffuser_rim_clearance = 0.2; // mm, vertical clearance above the lid under the retaining rim
+// Mono-body shroud: the diffuser is the shroud's own solid top cap, not a
+// separate part. Print this face down on the bed (flip the part before
+// slicing) so the ~160mm top is fully supported by the build plate instead
+// of bridging.
+shroud_top_thickness = 1.6; // mm, top cap thickness - tune from a transmission test print
+top_fillet_radius = 0.8; // mm, rounds the top-outer edge - the most visible edge of the print
 
-// Which part to generate: base/shroud/lid (print), or an assembled preview
-// with translucent LED panel / PCB mock-ups for a fit check.
-part = "shroud"; // [base:Base (print), shroud:Shroud (print), lid:Diffuser lid (print), preview:Preview assembly]
+// Which part to generate: base/shroud/baffle (print), or an assembled
+// preview with translucent LED panel / PCB mock-ups for a fit check.
+part = "shroud"; // [base:Base (print), shroud:Shroud (print), baffle:Baffle grid (print), preview:Preview assembly]
 
 $fn = 32;
 
@@ -126,8 +137,12 @@ frame_outer_w = panel_opening_w + 2 * wall_thickness;
 
 electronics_height = usb_assembled_height;
 frame_rim_h = floor_thickness + electronics_height + ledge_thickness
-            + panel_height + panel_top_clearance;
+            + panel_height + panel_top_clearance + baffle_height + baffle_top_clearance;
 frame_total_h = frame_rim_h + pin_height;
+
+// Baffle's seated height, in the base's own frame - directly on the panel.
+baffle_z = floor_thickness + electronics_height + ledge_thickness
+         + panel_height + panel_top_clearance;
 
 // The mating pin sits inset from the frame's OUTER face by just enough to
 // let the shroud's groove wall stay flush with the frame's outer surface
@@ -139,22 +154,6 @@ pin_outer_half_w = frame_outer_w / 2 - pin_outer_margin;
 
 groove_pocket_depth = pin_height + pin_seat_clearance; // how far the pin actually inserts
 groove_depth = groove_pocket_depth + groove_ceiling; // total height of the groove block
-
-// Diffuser lid seat, at the top of the shroud. The outer face stays flush
-// and straight the whole way up; only the inner face steps in to form the
-// lip, via a 45-degree chamfer so it prints without an overhang.
-diffuser_chamfer = diffuser_lip_width; // height of the taper (== run, for 45 degrees)
-diffuser_rim_height = diffuser_thickness + diffuser_rim_clearance;
-shroud_body_inner_l = frame_outer_l - 2 * shroud_wall_thickness; // straight-wall inner opening
-shroud_body_inner_w = frame_outer_w - 2 * shroud_wall_thickness;
-shroud_body_r = max(corner_radius - shroud_wall_thickness, 0.2);
-diffuser_opening_l = shroud_body_inner_l - 2 * diffuser_lip_width; // opening at the lip
-diffuser_opening_w = shroud_body_inner_w - 2 * diffuser_lip_width;
-diffuser_opening_r = max(shroud_body_r - diffuser_lip_width, 0.2);
-diffuser_lid_l = diffuser_opening_l - diffuser_fit_clearance; // actual lid panel size
-diffuser_lid_w = diffuser_opening_w - diffuser_fit_clearance;
-diffuser_lid_r = max(diffuser_opening_r - diffuser_fit_clearance / 2, 0.2);
-diffuser_lid_z = shroud_height - diffuser_rim_height; // lid's seated height, in the shroud's local frame
 
 pcb_pocket_len = pcb_length - pcb_fit_interference; // y-span (press-fit)
 pcb_pocket_wid = pcb_width - pcb_fit_interference; // x-span (press-fit)
@@ -191,6 +190,30 @@ module rring(l, w, r, t) {
     difference() {
         rrect(l, w, r);
         rrect(l - 2 * t, w - 2 * t, r - t);
+    }
+}
+
+// A rrect(l, w, r) slab of height h, with the TOP-outer edge rounded to a
+// true radius (fillet_r) - the bottom stays sharp/flat so it butts flush
+// against whatever it's sitting on. Standard minkowski-with-a-sphere trick:
+// a thin inset (by fillet_r) disk swept by a sphere reproduces full size at
+// the sphere's equator and tapers to the inset size at its pole, giving an
+// exact quarter-circle profile; the sharp lower prism needs no trimming
+// since the swept shape's lower half is always contained within it.
+module rounded_top_slab(l, w, r, h, fillet_r) {
+    disk_h = 0.01; // the minkowski "disk" has to have nonzero height; must
+                    // be subtracted back out of its placement below, or the
+                    // dome overshoots the slab's nominal top by this amount.
+    union() {
+        linear_extrude(height = h - fillet_r)
+            rrect(l, w, r);
+        translate([0, 0, h - fillet_r - disk_h])
+            minkowski() {
+                linear_extrude(height = disk_h)
+                    offset(r = -fillet_r)
+                        rrect(l, w, r);
+                sphere(r = fillet_r, $fn = 24);
+            }
     }
 }
 
@@ -292,6 +315,32 @@ module base_frame() {
     support_pillars();
 }
 
+// 16x16 waffle grid, one cell per LED (10mm pitch), printed separately in
+// an opaque filament and dropped in to rest directly on the panel.
+module baffle_grid() {
+    cols = 16;
+    rows = 16;
+    pitch_l = base_length / cols;
+    pitch_w = base_width / rows;
+    outer_l = base_length - baffle_fit_clearance; // the perimeter grid lines are
+    outer_w = base_width - baffle_fit_clearance;  // centered on the pitch lines and
+                                                   // so overshoot the nominal footprint
+                                                   // by half their thickness - clip it.
+
+    linear_extrude(height = baffle_height)
+        intersection() {
+            union() {
+                for (i = [0 : cols])
+                    translate([-base_length / 2 + i * pitch_l - baffle_wall_thickness / 2, -base_width / 2])
+                        square([baffle_wall_thickness, base_width]);
+                for (j = [0 : rows])
+                    translate([-base_length / 2, -base_width / 2 + j * pitch_w - baffle_wall_thickness / 2])
+                        square([base_length, baffle_wall_thickness]);
+            }
+            square([outer_l, outer_w], center = true);
+        }
+}
+
 //--------------------------------------------------------------------------
 // Shroud
 //--------------------------------------------------------------------------
@@ -324,39 +373,43 @@ module shroud() {
                 rring(b_l, b_w, r_b, pin_gap);
     }
 
-    // Straight body above the groove - no taper, flush with the frame -
-    // up to where the lid lip starts.
-    body_h = shroud_height - groove_depth - diffuser_chamfer - diffuser_rim_height;
+    // Chamfer between the groove's thick ceiling (groove_wall_span) and the
+    // thinner body wall above it. This part prints flipped - top cap down,
+    // groove up - so the body prints first and the groove last; without
+    // this taper the wall would jump straight from thin to thick going
+    // into the groove, an overhang. Outer face stays flush; only the inner
+    // face steps, same trick used for the base's ledge.
+    groove_inner_l = a_l - 2 * groove_wall_span; // groove's own (narrow) inner opening
+    groove_inner_w = a_w - 2 * groove_wall_span;
+    groove_inner_r = max(r_a - groove_wall_span, 0.2);
+    body_inner_l = a_l - 2 * shroud_wall_thickness; // body's (wide) inner opening
+    body_inner_w = a_w - 2 * shroud_wall_thickness;
+    body_inner_r = max(r_a - shroud_wall_thickness, 0.2);
+    groove_chamfer_h = groove_wall_span - shroud_wall_thickness; // == run, for 45 degrees
     translate([0, 0, groove_depth])
+        difference() {
+            linear_extrude(height = groove_chamfer_h)
+                rrect(a_l, a_w, r_a);
+            linear_extrude(height = groove_chamfer_h,
+                            scale = [body_inner_l / groove_inner_l, body_inner_w / groove_inner_w])
+                rrect(groove_inner_l, groove_inner_w, groove_inner_r);
+        }
+
+    // Straight body above the chamfer - no taper, flush with the frame -
+    // up to the solid top cap.
+    body_h = shroud_height - groove_depth - groove_chamfer_h - shroud_top_thickness;
+    translate([0, 0, groove_depth + groove_chamfer_h])
         linear_extrude(height = body_h)
             rring(a_l, a_w, r_a, shroud_wall_thickness);
 
-    // Chamfer into the lid lip at 45 degrees: the outer face stays flush
-    // and straight, only the inner face steps inward, so it prints without
-    // an overhang (same trick as the base's ledge).
-    translate([0, 0, groove_depth + body_h])
-        difference() {
-            linear_extrude(height = diffuser_chamfer)
-                rrect(a_l, a_w, r_a);
-            translate([0, 0, -0.5])
-                linear_extrude(height = diffuser_chamfer + 1,
-                                scale = [diffuser_opening_l / shroud_body_inner_l,
-                                         diffuser_opening_w / shroud_body_inner_w])
-                    rrect(shroud_body_inner_l, shroud_body_inner_w, shroud_body_r);
-        }
-
-    // Retaining rim: holds the lid down and hides its edge, open at the top.
-    translate([0, 0, groove_depth + body_h + diffuser_chamfer])
-        linear_extrude(height = diffuser_rim_height)
-            rring(a_l, a_w, r_a, shroud_wall_thickness + diffuser_lip_width);
-}
-
-// Diffuser lid: a thin flat panel that drops into the lip at the top of the
-// shroud. Printed as its own part so thickness/filament can be tuned for
-// light transmission independent of the shroud.
-module diffuser_lid() {
-    linear_extrude(height = diffuser_thickness)
-        rrect(diffuser_lid_l, diffuser_lid_w, diffuser_lid_r);
+    // Solid top cap - the diffuser itself, integrated into the same print.
+    // Print this face down on the bed (flip before slicing) so this span
+    // is fully supported instead of bridging. Its outer face (the top of
+    // the assembled lamp - the most visible surface) gets a true rounded
+    // edge instead of a sharp corner; the underside stays flush against
+    // the body below.
+    translate([0, 0, groove_depth + groove_chamfer_h + body_h])
+        rounded_top_slab(a_l, a_w, r_a, shroud_top_thickness, top_fillet_radius);
 }
 
 //--------------------------------------------------------------------------
@@ -389,15 +442,22 @@ module pcb_mock() {
 if (part == "base") {
     base_frame();
 } else if (part == "shroud") {
-    shroud();
-} else if (part == "lid") {
-    diffuser_lid();
+    // Print-ready orientation: flipped so the top cap (diffuser) sits on
+    // the bed at z=0 and the groove opening faces up, fully supported
+    // instead of bridging. A pure Z-axis mirror - X/Y untouched - not a
+    // rotation. shroud() itself stays groove-down for assembly (used as-is
+    // in the preview below).
+    translate([0, 0, shroud_height])
+        mirror([0, 0, 1])
+            shroud();
+} else if (part == "baffle") {
+    baffle_grid();
 } else {
     base_frame();
     translate([0, 0, frame_rim_h])
         shroud();
-    translate([0, 0, frame_rim_h + diffuser_lid_z])
-        diffuser_lid();
     %panel_mock();
     %pcb_mock();
+    translate([0, 0, baffle_z])
+        %baffle_grid();
 }
