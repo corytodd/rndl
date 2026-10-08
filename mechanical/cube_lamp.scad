@@ -79,7 +79,7 @@ pcb_width = 16.09; // mm, measured
 pcb_thickness = 2.15; // mm, measured: board plus the USB-C connector's solder pads (sets the groove/snap height)
 wire_gap_width = 8.0; // mm, centered gap in the back stop for LED panel wiring to exit
 usb_extend = 2.0; // mm, USB-C connector overhang past the PCB edge
-usb_assembled_height = 15.0; // mm, thickest point of the assembled board (from PCB underside)
+usb_assembled_height = 15.0; // mm, electronics cavity height above the floor (raised board + button must fit)
 
 // USB-C receptacle: an oval (stadium) shell, mounted on the PCB's underside,
 // so the oval port sits below the front-edge groove.
@@ -162,9 +162,9 @@ panel_opening_w = base_width + panel_fit_clearance;
 frame_outer_l = panel_opening_l + 2 * wall_thickness;
 frame_outer_w = panel_opening_w + 2 * wall_thickness;
 
-electronics_height = pcb_standoff + usb_assembled_height;
+electronics_height = usb_assembled_height;
 frame_rim_h = floor_thickness + electronics_height + ledge_thickness
-            + panel_height + panel_top_clearance + baffle_height + baffle_top_clearance;
+            + panel_height + panel_top_clearance;
 frame_total_h = frame_rim_h + pin_height;
 
 // Baffle's seated height, in the base's own frame - directly on the panel.
