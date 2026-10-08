@@ -4,8 +4,10 @@
 //
 // The lamp is composed of two pieces. The base and the shroud. The base
 // holds the LED panel, electronics, and a mates to the shroud. The electronics
-// sit beaneat the panel on a pressure-fit rectangular mount. The USB C port
-// is exposed through this frame so it is parallel to the frame and center.
+// sit beaneat the panel in a snap-fit cradle: the PCB's front edge seats in a
+// groove in the front wall so the USB C receptacle passes through an oval
+// port and sits flush with the exterior, side hooks snap over the PCB edges,
+// and a back stop keeps cable insertion from pushing the board off the wall.
 // The top of the frame is a narrow permiter pin that mates into the shroud's
 // receiving slot.
 //
@@ -73,17 +75,43 @@ baffle_top_clearance = 3.0; // mm, gap above the baffle before the rim/shroud
 
 // Eternaglo Pico controller board --------------------------------------------
 pcb_length = 36.0; // mm
-pcb_width = 17.0; // mm
-pcb_height = 4.0; // mm, bare PCB thickness
-pcb_fit_interference = 1.2; // mm, total: sets the mount's grip width (pcb_width - this).
-                             // Backed off one 0.4mm print line per side from the first test fit.
-wire_gap_width = 8.0; // mm, centered gap in the far (wire-side) wall for LED panel wiring to exit
-usb_extend = 4.0; // mm, USB-C connector overhang past the PCB edge
-usb_assembled_height = 15.0; // mm, thickest point of the assembled board
-usb_port_width = 9.0; // mm, clear opening for the USB-C plug
-usb_connector_height = 3.0; // mm, measured: total height of the mounted connector
-usb_connector_top = 5.0; // mm, measured: connector's top edge above the PCB mounting surface (floor)
-usb_port_clearance = 0.6; // mm, total vertical clearance added around the measured connector
+pcb_width = 16.09; // mm, measured
+pcb_thickness = 2.15; // mm, measured: board plus the USB-C connector's solder pads (sets the groove/snap height)
+wire_gap_width = 8.0; // mm, centered gap in the back stop for LED panel wiring to exit
+usb_extend = 2.0; // mm, USB-C connector overhang past the PCB edge
+usb_assembled_height = 15.0; // mm, thickest point of the assembled board (from PCB underside)
+
+// USB-C receptacle: an oval (stadium) shell, mounted on the PCB's underside,
+// so the oval port sits below the front-edge groove.
+usb_c_width = 8.94; // mm, receptacle shell width (USB-C spec)
+usb_c_height = 3.26; // mm, receptacle shell height (USB-C spec)
+usb_c_below_pcb = 0.0; // mm, gap from PCB underside to shell top (0 = flush-mounted; negative for mid-mount)
+usb_c_clearance = 0.3; // mm, total clearance around the shell in the oval port
+
+// Snap-fit PCB cradle ----------------------------------------------------------
+pcb_standoff = 5.5; // mm, PCB underside above the floor - must clear the receptacle hanging below it.
+                    // Raised 1.5mm from the first test fit: the attached wires tilt the board.
+
+// Tactile button on the PCB's top face near its front edge. It reaches into
+// the front wall along with the board, so the groove gets a pocket above it.
+button_size = 6.15; // mm, measured: square button footprint
+button_height = 5.0; // mm, button height above the PCB top (6x6x5 tact switch - verify)
+button_x = 0.0; // mm, button center offset from the board's centerline (+X = right, facing the port)
+button_clearance = 0.4; // mm, total clearance around the button in the pocket
+pcb_groove_clearance = 0.3; // mm, total vertical play in the front-wall groove
+pcb_side_clearance = 0.2; // mm, per-side gap between PCB edges and the snap arms
+pcb_back_clearance = 0.2; // mm, gap between PCB back edge and the back stop
+pcb_support_width = 1.5; // mm, how far the support pads reach under the PCB edges
+pcb_support_length = 4.0; // mm, Y length of each side support pad
+snap_arm_thickness = 1.2; // mm, flexing arm wall (3 perimeters at 0.4mm)
+snap_arm_length = 8.0; // mm, Y length of each snap arm
+snap_lip = 0.6; // mm, how far the hook reaches in over the PCB edge
+snap_lead_in = 1.6; // mm, height of the hook's lead-in ramp above the PCB
+snap_vertical_play = 0.1; // mm, gap between PCB top and the hook's underside
+snap_relief_depth = 1.6; // mm, floor pocket around each arm root - lengthens the flexing arm
+snap_relief_gap = 1.0; // mm, pocket clearance around the arm
+back_stop_thickness = 2.0; // mm, wall behind the PCB's back edge
+back_stop_rise = 1.5; // mm, back stop height above the PCB top
 
 // Base frame construction ----------------------------------------------------
 wall_thickness = 3.2; // mm, frame side walls
@@ -92,8 +120,6 @@ corner_radius = 4.0; // mm, outer corner fillet
 ledge_width = 2.0; // mm, inward step the panel rests on
 ledge_thickness = 1.6; // mm, height of the flat panel-support shelf
 ledge_chamfer = 2.0; // mm, height of the taper into the ledge (= ledge_width -> 45 degrees, self-supporting)
-mount_wall_thickness = 1.6; // mm, PCB press-fit mount walls
-mount_wall_overhang = 3.6; // mm, how far the mount walls rise above the PCB top (raised +3mm per test print)
 pin_height = 3.0; // mm, mating pin above the frame's top rim
 pin_width = 1.4; // mm, radial width of the mating pin
 
@@ -120,9 +146,10 @@ groove_ceiling = 1.0; // mm, solid roof over the pocket connecting its inner
 shroud_top_thickness = 1.6; // mm, top cap thickness - tune from a transmission test print
 top_fillet_radius = 0.8; // mm, rounds the top-outer edge - the most visible edge of the print
 
-// Which part to generate: base/shroud/baffle (print), or an assembled
-// preview with translucent LED panel / PCB mock-ups for a fit check.
-part = "shroud"; // [base:Base (print), shroud:Shroud (print), baffle:Baffle grid (print), preview:Preview assembly]
+// Which part to generate: base/shroud/baffle (print), a pcb_mount test
+// coupon (just the front wall + PCB cradle, cut from the base, for dialing in
+// the fit), or an assembled preview with translucent LED panel / PCB mock-ups.
+part = "base"; // [base:Base (print), shroud:Shroud (print), baffle:Baffle grid (print), pcb_mount:PCB mount test (print), preview:Preview assembly]
 
 $fn = 32;
 
@@ -135,7 +162,7 @@ panel_opening_w = base_width + panel_fit_clearance;
 frame_outer_l = panel_opening_l + 2 * wall_thickness;
 frame_outer_w = panel_opening_w + 2 * wall_thickness;
 
-electronics_height = usb_assembled_height;
+electronics_height = pcb_standoff + usb_assembled_height;
 frame_rim_h = floor_thickness + electronics_height + ledge_thickness
             + panel_height + panel_top_clearance + baffle_height + baffle_top_clearance;
 frame_total_h = frame_rim_h + pin_height;
@@ -155,17 +182,36 @@ pin_outer_half_w = frame_outer_w / 2 - pin_outer_margin;
 groove_pocket_depth = pin_height + pin_seat_clearance; // how far the pin actually inserts
 groove_depth = groove_pocket_depth + groove_ceiling; // total height of the groove block
 
-pcb_pocket_len = pcb_length - pcb_fit_interference; // y-span (press-fit)
-pcb_pocket_wid = pcb_width - pcb_fit_interference; // x-span (press-fit)
+// PCB placement. The board's front edge sits in a groove cut into the front
+// wall, deep enough that the USB-C overhang (usb_extend) ends exactly at the
+// wall's outer face - the receptacle is flush with the exterior.
+wall_inner_y = -panel_opening_w / 2;
+pcb_groove_depth = max(wall_thickness - usb_extend, 0);
+pcb_front_y = wall_inner_y - pcb_groove_depth;
+pcb_back_y = pcb_front_y + pcb_length;
+pcb_mid_y = (pcb_front_y + pcb_back_y) / 2;
+pcb_half_w = pcb_width / 2;
+pcb_z0 = floor_thickness + pcb_standoff; // PCB underside
+pcb_z1 = pcb_z0 + pcb_thickness; // PCB top
+
+// USB-C oval port, centered on the receptacle hanging below the board.
+usb_port_w = usb_c_width + usb_c_clearance;
+usb_port_h = usb_c_height + usb_c_clearance;
+usb_port_z = pcb_z0 - usb_c_below_pcb - usb_c_height / 2;
+assert(usb_port_z - usb_port_h / 2 >= floor_thickness,
+       "pcb_standoff too small: the USB-C receptacle would hit the floor");
+
+// Snap arm inner face, and the hook's underside / top heights.
+snap_arm_x0 = pcb_half_w + pcb_side_clearance;
+snap_hook_z0 = pcb_z1 + snap_vertical_play;
+snap_hook_z1 = snap_hook_z0 + snap_lead_in;
+
+back_stop_y0 = pcb_back_y + pcb_back_clearance;
 
 // Mount footprint, for the support pillar grid to steer clear of.
-mount_near_y = -panel_opening_w / 2 + usb_extend;
-mount_far_y = mount_near_y + pcb_pocket_len + 2 * mount_wall_thickness;
-mount_half_w = pcb_pocket_wid / 2 + mount_wall_thickness;
-
-// USB-C cutout envelope, measured from the floor (PCB mounting surface) up.
-usb_port_height = usb_connector_height + usb_port_clearance;
-usb_port_bottom = (usb_connector_top - usb_connector_height) - usb_port_clearance / 2;
+mount_near_y = wall_inner_y;
+mount_far_y = back_stop_y0 + back_stop_thickness;
+mount_half_w = snap_arm_x0 + snap_arm_thickness + snap_relief_gap;
 
 //--------------------------------------------------------------------------
 // Helpers
@@ -221,25 +267,96 @@ module rounded_top_slab(l, w, r, h, fillet_r) {
 // Base (frame)
 //--------------------------------------------------------------------------
 
-// U-shaped press-fit pocket that grips the Eternaglo Pico by its edges,
-// open on the USB-C side so the connector and cable are unobstructed.
-module pcb_mount() {
-    outer_len = pcb_pocket_len + 2 * mount_wall_thickness;
-    pocket_depth = pcb_height + mount_wall_overhang;
+// Profile of the +X snap arm in the XZ plane: a straight arm rooted in the
+// floor relief pocket, with a flat-bottomed hook that catches the PCB's top
+// edge and a ramp above it that pushes the arm outward as the board is
+// pressed down.
+module snap_arm_profile() {
+    x0 = snap_arm_x0;
+    x1 = x0 + snap_arm_thickness;
+    z_root = floor_thickness - snap_relief_depth;
+    polygon([
+        [x1, z_root],
+        [x1, snap_hook_z1],
+        [x0, snap_hook_z1],
+        [x0 - snap_lip, snap_hook_z0],
+        [x0, snap_hook_z0],
+        [x0, z_root],
+    ]);
+}
 
-    translate([0, mount_near_y + outer_len / 2, floor_thickness])
-        difference() {
-            linear_extrude(height = pocket_depth)
-                square([pcb_pocket_wid + 2 * mount_wall_thickness, outer_len], center = true);
-            linear_extrude(height = pocket_depth)
-                square([pcb_pocket_wid, pcb_pocket_len], center = true);
-            // Open the near (USB-facing) end of the U.
-            translate([-(pcb_pocket_wid + 1) / 2, -outer_len / 2 - 0.5, -0.5])
-                cube([pcb_pocket_wid + 1, mount_wall_thickness + 1, pocket_depth + 1], center = false);
-            // Centered gap in the far (wire-side) wall so wiring to the LED panel can exit.
-            translate([-wire_gap_width / 2, pcb_pocket_len / 2 - 0.5, -0.5])
-                cube([wire_gap_width, mount_wall_thickness + 1, pocket_depth + 1], center = false);
+// Snap-fit cradle for the Eternaglo Pico. The front edge seats in the front
+// wall groove (see pcb_mount_cuts), two side arms snap over the PCB edges to
+// hold it down, and a back stop behind the far edge keeps USB insertion from
+// pushing the board (and its receptacle) away from the wall. Assemble by
+// tipping the front edge into the groove, then pressing the back end down.
+module pcb_mount() {
+    for (side = [0, 1]) mirror([side, 0, 0]) {
+        // Flexing snap arm, centered on the board's length.
+        translate([0, pcb_mid_y, 0])
+            rotate([90, 0, 0])
+                linear_extrude(height = snap_arm_length, center = true)
+                    snap_arm_profile();
+
+        // Support pads under the PCB edge, either side of the arm (kept
+        // clear of the arm's relief pocket so they don't stiffen it).
+        for (dy = [-1, 1])
+            translate([pcb_half_w - pcb_support_width / 2,
+                       pcb_mid_y + dy * (snap_arm_length / 2 + snap_relief_gap + pcb_support_length / 2),
+                       floor_thickness + pcb_standoff / 2])
+                cube([pcb_support_width, pcb_support_length, pcb_standoff], center = true);
+    }
+
+    // Back stop, plus a support ledge under the PCB's back edge; both split
+    // by the centered wire gap so the panel wiring can exit.
+    stop_w = 2 * (pcb_half_w + pcb_side_clearance);
+    difference() {
+        union() {
+            translate([-stop_w / 2, back_stop_y0, floor_thickness])
+                cube([stop_w, back_stop_thickness, pcb_z1 + back_stop_rise - floor_thickness]);
+            translate([-pcb_half_w, pcb_back_y - pcb_support_width, floor_thickness])
+                cube([2 * pcb_half_w, pcb_support_width + pcb_back_clearance + 0.01, pcb_standoff]);
         }
+        translate([-wire_gap_width / 2, pcb_back_y - pcb_support_width - 1, floor_thickness - 0.1])
+            cube([wire_gap_width, pcb_support_width + pcb_back_clearance + back_stop_thickness + 2,
+                  pcb_z1 + back_stop_rise]);
+    }
+}
+
+// Material removed from the base for the PCB: the oval USB-C port through the
+// front wall, the groove the PCB's front edge seats in, and the floor relief
+// pockets that let the snap arms root lower (a longer arm flexes with less
+// strain).
+module pcb_mount_cuts() {
+    // Oval (stadium) USB-C port through the full wall thickness.
+    translate([0, -frame_outer_w / 2 - 0.5, usb_port_z])
+        rotate([-90, 0, 0])
+            linear_extrude(height = wall_thickness + 1)
+                hull()
+                    for (x = [-1, 1])
+                        translate([x * (usb_port_w - usb_port_h) / 2, 0])
+                            circle(d = usb_port_h);
+
+    // Front-edge groove, centered on the board, cut back from the wall's inner face.
+    if (pcb_groove_depth > 0)
+        translate([-(pcb_half_w + pcb_side_clearance), pcb_front_y, pcb_z0 - pcb_groove_clearance / 2])
+            cube([2 * (pcb_half_w + pcb_side_clearance), pcb_groove_depth + 0.1,
+                  pcb_thickness + pcb_groove_clearance]);
+
+    // Pocket above the groove so the button near the board's front edge
+    // doesn't hit the wall's inner face.
+    if (pcb_groove_depth > 0)
+        translate([button_x - (button_size + button_clearance) / 2, pcb_front_y, pcb_z1])
+            cube([button_size + button_clearance, pcb_groove_depth + 0.1,
+                  button_height + button_clearance]);
+
+    // Relief pockets around each snap arm's root.
+    for (side = [-1, 1])
+        translate([side * (snap_arm_x0 + snap_arm_thickness / 2) - (snap_arm_thickness / 2 + snap_relief_gap),
+                   pcb_mid_y - snap_arm_length / 2 - snap_relief_gap / 2,
+                   floor_thickness - snap_relief_depth])
+            cube([snap_arm_thickness + 2 * snap_relief_gap, snap_arm_length + snap_relief_gap,
+                  snap_relief_depth + 0.1]);
 }
 
 // Sparse grid of straight vertical posts from the floor to the ledge height,
@@ -305,10 +422,7 @@ module base_frame() {
             linear_extrude(height = frame_rim_h - (floor_thickness + electronics_height + ledge_thickness) + 0.1)
                 rrect(panel_opening_l, panel_opening_w, max(corner_radius - wall_thickness, 0.3));
 
-        // USB-C cutout through the front wall, centered and parallel to the
-        // frame, positioned to the measured connector height above the floor.
-        translate([-usb_port_width / 2, -frame_outer_w / 2 - 0.5, floor_thickness + usb_port_bottom])
-            cube([usb_port_width, wall_thickness + 1, usb_port_height], center = false);
+        pcb_mount_cuts();
     }
 
     pcb_mount();
@@ -423,17 +537,16 @@ module panel_mock() {
 }
 
 module pcb_mock() {
-    near_y = -panel_opening_w / 2 + usb_extend;
-    translate([0, 0, floor_thickness]) {
-        linear_extrude(height = pcb_height)
-            translate([0, near_y + pcb_length / 2])
-                square([pcb_width, pcb_length], center = true);
-        // USB-C connector overhang, bridging the gap out to the frame wall.
-        translate([0, 0, usb_port_bottom])
-            linear_extrude(height = usb_port_height)
-                translate([0, near_y - usb_extend / 2])
-                    square([usb_port_width, usb_extend], center = true);
-    }
+    translate([0, pcb_mid_y, pcb_z0 + pcb_thickness / 2])
+        cube([pcb_width, pcb_length, pcb_thickness], center = true);
+    // USB-C receptacle, its face flush with the frame's outer wall.
+    translate([0, pcb_front_y - usb_extend, usb_port_z])
+        rotate([-90, 0, 0])
+            linear_extrude(height = usb_extend + 7)
+                hull()
+                    for (x = [-1, 1])
+                        translate([x * (usb_c_width - usb_c_height) / 2, 0])
+                            circle(d = usb_c_height);
 }
 
 //--------------------------------------------------------------------------
@@ -452,6 +565,18 @@ if (part == "base") {
             shroud();
 } else if (part == "baffle") {
     baffle_grid();
+} else if (part == "pcb_mount") {
+    // Test coupon: just the front wall, floor and PCB cradle, cut out of the
+    // full base so the fit can be dialed in without printing the whole frame.
+    coupon_margin = 5.0;
+    coupon_top = max(snap_hook_z1, pcb_z1 + back_stop_rise, pcb_z1 + button_height + button_clearance,
+                     usb_port_z + usb_port_h / 2) + 3;
+    intersection() {
+        base_frame();
+        translate([-(mount_half_w + coupon_margin), -frame_outer_w / 2 - 1, 0])
+            cube([2 * (mount_half_w + coupon_margin),
+                  mount_far_y + coupon_margin + frame_outer_w / 2 + 1, coupon_top]);
+    }
 } else {
     base_frame();
     translate([0, 0, frame_rim_h])
