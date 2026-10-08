@@ -103,13 +103,13 @@ pcb_side_clearance = 0.2; // mm, per-side gap between PCB edges and the snap arm
 pcb_back_clearance = 0.2; // mm, gap between PCB back edge and the back stop
 pcb_support_width = 1.5; // mm, how far the support pads reach under the PCB edges
 pcb_support_length = 4.0; // mm, Y length of each side support pad
-snap_arm_thickness = 1.2; // mm, flexing arm wall (3 perimeters at 0.4mm)
-snap_arm_length = 8.0; // mm, Y length of each snap arm
-snap_lip = 0.6; // mm, how far the hook reaches in over the PCB edge
+snap_arm_thickness = 2.0; // mm, arm wall - thick enough for ~4 perimeters so the root isn't a 2-line stack
+snap_arm_length = 12.0; // mm, Y length of each snap arm
+snap_lip = 0.4; // mm, how far the hook reaches in past the arm face (0.2mm over the PCB after side clearance)
 snap_lead_in = 1.6; // mm, height of the hook's lead-in ramp above the PCB
 snap_vertical_play = 0.1; // mm, gap between PCB top and the hook's underside
-snap_relief_depth = 1.6; // mm, floor pocket around each arm root - lengthens the flexing arm
-snap_relief_gap = 1.0; // mm, pocket clearance around the arm
+snap_gusset = 2.0; // mm, triangular buttress on the arm's outer root, spreads load into the floor
+snap_pad_gap = 1.0; // mm, Y gap between each arm and its neighboring support pads
 back_stop_thickness = 2.0; // mm, wall behind the PCB's back edge
 back_stop_rise = 1.5; // mm, back stop height above the PCB top
 
@@ -211,7 +211,7 @@ back_stop_y0 = pcb_back_y + pcb_back_clearance;
 // Mount footprint, for the support pillar grid to steer clear of.
 mount_near_y = wall_inner_y;
 mount_far_y = back_stop_y0 + back_stop_thickness;
-mount_half_w = snap_arm_x0 + snap_arm_thickness + snap_relief_gap;
+mount_half_w = snap_arm_x0 + snap_arm_thickness + snap_gusset;
 
 //--------------------------------------------------------------------------
 // Helpers
@@ -267,16 +267,18 @@ module rounded_top_slab(l, w, r, h, fillet_r) {
 // Base (frame)
 //--------------------------------------------------------------------------
 
-// Profile of the +X snap arm in the XZ plane: a straight arm rooted in the
-// floor relief pocket, with a flat-bottomed hook that catches the PCB's top
+// Profile of the +X snap arm in the XZ plane: a straight arm rooted on the
+// full-thickness floor and braced by a gusset on its outer side, with a
+// flat-bottomed hook that catches the PCB's top
 // edge and a ramp above it that pushes the arm outward as the board is
 // pressed down.
 module snap_arm_profile() {
     x0 = snap_arm_x0;
     x1 = x0 + snap_arm_thickness;
-    z_root = floor_thickness - snap_relief_depth;
+    z_root = floor_thickness - 0.01; // sink slightly into the floor so the union fuses
     polygon([
-        [x1, z_root],
+        [x1 + snap_gusset, z_root],
+        [x1, z_root + snap_gusset],
         [x1, snap_hook_z1],
         [x0, snap_hook_z1],
         [x0 - snap_lip, snap_hook_z0],
@@ -298,11 +300,10 @@ module pcb_mount() {
                 linear_extrude(height = snap_arm_length, center = true)
                     snap_arm_profile();
 
-        // Support pads under the PCB edge, either side of the arm (kept
-        // clear of the arm's relief pocket so they don't stiffen it).
+        // Support pads under the PCB edge, either side of the arm.
         for (dy = [-1, 1])
             translate([pcb_half_w - pcb_support_width / 2,
-                       pcb_mid_y + dy * (snap_arm_length / 2 + snap_relief_gap + pcb_support_length / 2),
+                       pcb_mid_y + dy * (snap_arm_length / 2 + snap_pad_gap + pcb_support_length / 2),
                        floor_thickness + pcb_standoff / 2])
                 cube([pcb_support_width, pcb_support_length, pcb_standoff], center = true);
     }
@@ -324,9 +325,8 @@ module pcb_mount() {
 }
 
 // Material removed from the base for the PCB: the oval USB-C port through the
-// front wall, the groove the PCB's front edge seats in, and the floor relief
-// pockets that let the snap arms root lower (a longer arm flexes with less
-// strain).
+// front wall, the groove the PCB's front edge seats in, and the button pocket
+// above it.
 module pcb_mount_cuts() {
     // Oval (stadium) USB-C port through the full wall thickness.
     translate([0, -frame_outer_w / 2 - 0.5, usb_port_z])
@@ -349,14 +349,6 @@ module pcb_mount_cuts() {
         translate([button_x - (button_size + button_clearance) / 2, pcb_front_y, pcb_z1])
             cube([button_size + button_clearance, pcb_groove_depth + 0.1,
                   button_height + button_clearance]);
-
-    // Relief pockets around each snap arm's root.
-    for (side = [-1, 1])
-        translate([side * (snap_arm_x0 + snap_arm_thickness / 2) - (snap_arm_thickness / 2 + snap_relief_gap),
-                   pcb_mid_y - snap_arm_length / 2 - snap_relief_gap / 2,
-                   floor_thickness - snap_relief_depth])
-            cube([snap_arm_thickness + 2 * snap_relief_gap, snap_arm_length + snap_relief_gap,
-                  snap_relief_depth + 0.1]);
 }
 
 // Sparse grid of straight vertical posts from the floor to the ledge height,
